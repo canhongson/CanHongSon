@@ -29,7 +29,6 @@ standPart.Parent = workspace
 
 local autoFarmEnabled = false
 local isDodging = false
-local dodgeSkillEnabled = false
 
 -- Tìm mob gần nhất
 local function getNearestMob()
@@ -77,13 +76,6 @@ end)
 -- Auto Farm
 local farmConnection = nil
 
-local function stopFarm()
-	if farmConnection then
-		farmConnection:Disconnect()
-		farmConnection = nil
-	end
-end
-
 local function startFarm()
 	if farmConnection then return end
 	farmConnection = RunService.RenderStepped:Connect(function()
@@ -93,38 +85,36 @@ local function startFarm()
 		if mob and mob:FindFirstChild("HumanoidRootPart") then
 			local mobHRP = mob.HumanoidRootPart
 
-			if dodgeSkillEnabled and mob:FindFirstChild("Onskill") and mob.Onskill.Value then
+			if mob:FindFirstChild("Onskill") and mob.Onskill.Value then
+				-- Né skill: lùi ra và đứng yên
 				isDodging = true
-				autoFarmEnabled = false
-				stopFarm()
-
 				local backPos = mobHRP.CFrame.LookVector * -100
 				local dodgePos = mobHRP.Position + backPos
 				standPart.CFrame = CFrame.new(dodgePos)
 				hrp.CFrame = CFrame.new(dodgePos)
 				return
-			end
-
-			if isDodging and (not mob:FindFirstChild("Onskill") or not mob.Onskill.Value) then
+			else
 				isDodging = false
-				if dodgeSkillEnabled then
-					autoFarmEnabled = true
-					startFarm()
-				end
 			end
 
-			if not isDodging then
-				local offset = (-mobHRP.CFrame.LookVector * 7)
-				local targetPos = mobHRP.Position + offset
-				standPart.CFrame = CFrame.new(targetPos)
-				hrp.CFrame = CFrame.new(targetPos, mobHRP.Position)
-				attackM1()
-			end
+			-- Di chuyển ra sau mob
+			local offset = (-mobHRP.CFrame.LookVector * 7)
+			local targetPos = mobHRP.Position + offset
+			standPart.CFrame = CFrame.new(targetPos)
+			hrp.CFrame = CFrame.new(targetPos, mobHRP.Position)
+			attackM1()
 		end
 	end)
 end
 
--- Giao diện bật tắt Farm
+local function stopFarm()
+	if farmConnection then
+		farmConnection:Disconnect()
+		farmConnection = nil
+	end
+end
+
+-- Giao diện bật tắt farm
 Tab:CreateToggle({
 	Name = "Start Farm",
 	CurrentValue = false,
@@ -136,15 +126,5 @@ Tab:CreateToggle({
 		else
 			stopFarm()
 		end
-	end,
-})
-
--- Giao diện bật tắt né kỹ năng
-Tab:CreateToggle({
-	Name = "Dodge Skill",
-	CurrentValue = false,
-	Flag = "DodgeSkillToggle",
-	Callback = function(value)
-		dodgeSkillEnabled = value
 	end,
 })
