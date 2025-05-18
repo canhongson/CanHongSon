@@ -18,7 +18,6 @@ local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local hrp = character:WaitForChild("HumanoidRootPart")
 
--- Nền đứng
 local standPart = Instance.new("Part")
 standPart.Size = Vector3.new(4, 1, 4)
 standPart.Anchored = true
@@ -30,7 +29,6 @@ standPart.Parent = workspace
 local autoFarmEnabled = false
 local isDodging = false
 
--- Tìm mob gần nhất
 local function getNearestMob()
 	local nearestMob = nil
 	local shortestDistance = math.huge
@@ -46,20 +44,17 @@ local function getNearestMob()
 	return nearestMob
 end
 
--- Tấn công M1
 local function attackM1()
 	VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
 	VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
 end
 
--- Dùng kỹ năng
 local function attackKey(key)
 	VirtualInputManager:SendKeyEvent(true, key, false, game)
 	task.wait(0.05)
 	VirtualInputManager:SendKeyEvent(false, key, false, game)
 end
 
--- Spam kỹ năng (Z, X, C)
 task.spawn(function()
 	while true do
 		if autoFarmEnabled and not isDodging then
@@ -73,7 +68,6 @@ task.spawn(function()
 	end
 end)
 
--- Auto Farm
 local farmConnection = nil
 
 local function startFarm()
@@ -86,7 +80,6 @@ local function startFarm()
 			local mobHRP = mob.HumanoidRootPart
 
 			if mob:FindFirstChild("Onskill") and mob.Onskill.Value then
-				-- Né skill: lùi ra và đứng yên
 				isDodging = true
 				local backPos = mobHRP.CFrame.LookVector * -100
 				local dodgePos = mobHRP.Position + backPos
@@ -97,7 +90,6 @@ local function startFarm()
 				isDodging = false
 			end
 
-			-- Di chuyển ra sau mob
 			local offset = (-mobHRP.CFrame.LookVector * 7)
 			local targetPos = mobHRP.Position + offset
 			standPart.CFrame = CFrame.new(targetPos)
@@ -114,7 +106,6 @@ local function stopFarm()
 	end
 end
 
--- Giao diện bật tắt farm
 Tab:CreateToggle({
 	Name = "Start Farm",
 	CurrentValue = false,
