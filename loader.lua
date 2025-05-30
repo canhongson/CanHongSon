@@ -20,7 +20,7 @@ local character = player.Character or player.CharacterAdded:Wait()
 local hrp = character:WaitForChild("HumanoidRootPart")
 
 local standPart = Instance.new("Part")
-standPart.Size = Vector3.new(4, 1, 4)
+standPart.Size = Vector3.new(1, 1, 1)
 standPart.Anchored = true
 standPart.Transparency = 1
 standPart.CanCollide = true
