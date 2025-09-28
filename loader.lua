@@ -188,7 +188,7 @@ if Rayfield then
         Theme = "Default"
     })
 
-    local Tab = Window:CreateTab("Visuals", 4483362458)
+    local Tab = Window:CreateTab("Farm", 4483362458)
     Tab:CreateToggle({Name="ESP ", CurrentValue=false, Flag="safe_esp", Callback=function(v) ESPEnabled=v end})
     Tab:CreateToggle({Name="FOV", CurrentValue=false, Flag="safe_fov", Callback=function(v) FOVEnabled=v end})
     Tab:CreateSlider({Name="FOV Radius", Range={20,800}, Increment=5, Suffix="px", CurrentValue=FOV_RADIUS, Flag="fov_radius", Callback=function(val) FOV_RADIUS=val FOVCircle.Size=UDim2.new(0,FOV_RADIUS*2,0,FOV_RADIUS*2) end})
