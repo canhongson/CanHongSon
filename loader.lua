@@ -163,7 +163,6 @@ RunService.RenderStepped:Connect(function()
         for k,_ in pairs(ESP_LABELS) do removeBillboard(k) end
     end
 
-    -- Auto Aim visual only
     if AutoAimEnabled then
         local target = findNearestTarget()
         if target then
@@ -191,7 +190,7 @@ if Rayfield then
 
     local Tab = Window:CreateTab("Visuals", 4483362458)
     Tab:CreateToggle({Name="ESP ", CurrentValue=false, Flag="safe_esp", Callback=function(v) ESPEnabled=v end})
-    Tab:CreateToggle({Name="FOV GUI", CurrentValue=false, Flag="safe_fov", Callback=function(v) FOVEnabled=v end})
+    Tab:CreateToggle({Name="FOV", CurrentValue=false, Flag="safe_fov", Callback=function(v) FOVEnabled=v end})
     Tab:CreateSlider({Name="FOV Radius", Range={20,800}, Increment=5, Suffix="px", CurrentValue=FOV_RADIUS, Flag="fov_radius", Callback=function(val) FOV_RADIUS=val FOVCircle.Size=UDim2.new(0,FOV_RADIUS*2,0,FOV_RADIUS*2) end})
     Tab:CreateToggle({Name="Auto Aim ", CurrentValue=false, Flag="auto_aim", Callback=function(v) AutoAimEnabled=v end})
     Tab:CreateToggle({Name="Kill Aura (PC ONLY)", CurrentValue=false, Flag="kill_aura", Callback=function(v) KillAuraEnabled=v end})
