@@ -6,7 +6,7 @@ local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
 
 
-local FOV_RADIUS = 150
+local FOV_RADIUS = 120
 local ESPEnabled = false
 local FOVEnabled = false
 local AutoAimEnabled = false
