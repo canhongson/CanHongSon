@@ -9,7 +9,7 @@ local Window = Rayfield:CreateWindow({
     }
 })
 
-local MainTab = Window:CreateTab("Portals", 4483362458)
+local MainTab = Window:CreateTab("Farm", 4483362458)
 
 local function TeleportToPortal(portal)
     local player = game:GetService("Players").LocalPlayer
