@@ -1,0 +1,10 @@
+local Rayfield
+pcall(function() Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))() end)
+
+if Rayfield then
+    local Window = Rayfield:CreateWindow({
+        Name = "CanHongSon",
+        LoadingTitle = "Loading",
+        LoadingSubtitle = "by SonDuBai",
+        Theme = "Default"
+    })
