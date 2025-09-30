@@ -1,0 +1,62 @@
+local player = game:GetService("Players").LocalPlayer
+local char = player.Character or player.CharacterAdded:Wait()
+local hrp = char:WaitForChild("HumanoidRootPart")
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RepairEvent = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Generator"):WaitForChild("RepairEvent")
+
+local generatorsFolder = workspace:WaitForChild("Map"):WaitForChild("Generator")
+
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+   Name = "Auto Repair",
+   LoadingTitle = "Violence-District",
+   LoadingSubtitle = "sondubai",
+   ConfigurationSaving = {
+      Enabled = true,
+      FolderName = nil,
+      FileName = "conmemay"
+   }
+})
+
+local MainTab = Window:CreateTab("Main", 4483362458)
+
+local autoRepair = false
+
+MainTab:CreateToggle({
+   Name = "Auto Generators",
+   CurrentValue = false,
+   Flag = "AutoRepair",
+   Callback = function(Value)
+       autoRepair = Value
+   end,
+})
+
+local function tpTo(part)
+    if hrp and part then
+        hrp.CFrame = part.CFrame + Vector3.new(0, 0, 0)
+    end
+end
+
+local function repairMachine(part)
+    if part and part:IsA("BasePart") then
+        tpTo(part)
+        for i = 1, 30 do
+            if not autoRepair then return end -- dừng nếu toggle tắt
+            RepairEvent:FireServer(part, true)
+            task.wait(0.2)
+        end
+    end
+end
+
+task.spawn(function()
+    while task.wait(1) do
+        if autoRepair then
+            for _, machine in ipairs(generatorsFolder:GetChildren()) do
+                if not autoRepair then break end
+                repairMachine(machine)
+            end
+        end
+    end
+end)
