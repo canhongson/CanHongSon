@@ -1,1 +1,80 @@
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
+local Window = Rayfield:CreateWindow({
+    Name = "Portal Teleport",
+    LoadingTitle = "Teleport Hub",
+    LoadingSubtitle = "By sondubai",
+    ConfigurationSaving = {
+        Enabled = false,
+    }
+})
+
+local MainTab = Window:CreateTab("Portals", 4483362458)
+
+local function TeleportToPortal(portal)
+    local player = game:GetService("Players").LocalPlayer
+    local character = player.Character or player.CharacterAdded:Wait()
+    local hrp = character:WaitForChild("HumanoidRootPart")
+    hrp.CFrame = portal.CFrame + Vector3.new(0, 5, 0)
+end
+
+local tpSpace = false
+local tpRainbow = false
+local tpVolcano = false
+local tpFrozen = false
+
+MainTab:CreateToggle({
+    Name = "TP Space",
+    CurrentValue = false,
+    Callback = function(Value)
+        tpSpace = Value
+        task.spawn(function()
+            while tpSpace do
+                TeleportToPortal(workspace.DynamicObjects.Worlds.Space.WinPortal.Touch)
+                task.wait(1)
+            end
+        end)
+    end,
+})
+
+MainTab:CreateToggle({
+    Name = "TP Rainbow",
+    CurrentValue = false,
+    Callback = function(Value)
+        tpRainbow = Value
+        task.spawn(function()
+            while tpRainbow do
+                TeleportToPortal(workspace.DynamicObjects.Worlds.Rainbow.WinPortal.Touch)
+                task.wait(1)
+            end
+        end)
+    end,
+})
+
+MainTab:CreateToggle({
+    Name = "TP Volcano",
+    CurrentValue = false,
+    Callback = function(Value)
+        tpVolcano = Value
+        task.spawn(function()
+            while tpVolcano do
+                TeleportToPortal(workspace.DynamicObjects.Worlds.Volcano.WinPortal.Touch)
+                task.wait(1)
+            end
+        end)
+    end,
+})
+
+MainTab:CreateToggle({
+    Name = "TP Frozen",
+    CurrentValue = false,
+    Callback = function(Value)
+        tpFrozen = Value
+        task.spawn(function()
+            while tpFrozen do
+                TeleportToPortal(workspace.DynamicObjects.Worlds.Frozen.WinPortal.Touch)
+                task.wait(1)
+            end
+        end)
+    end,
+})
