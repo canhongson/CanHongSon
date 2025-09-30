@@ -31,7 +31,7 @@ MainTab:CreateToggle({
         task.spawn(function()
             while tpSpace do
                 TeleportToPortal(workspace.DynamicObjects.Worlds.Space.WinPortal.Touch)
-                task.wait(1)
+                task.wait(2)
             end
         end)
     end,
@@ -45,7 +45,7 @@ MainTab:CreateToggle({
         task.spawn(function()
             while tpRainbow do
                 TeleportToPortal(workspace.DynamicObjects.Worlds.Rainbow.WinPortal.Touch)
-                task.wait(1)
+                task.wait(2)
             end
         end)
     end,
@@ -59,7 +59,7 @@ MainTab:CreateToggle({
         task.spawn(function()
             while tpVolcano do
                 TeleportToPortal(workspace.DynamicObjects.Worlds.Volcano.WinPortal.Touch)
-                task.wait(1)
+                task.wait(2)
             end
         end)
     end,
@@ -73,7 +73,7 @@ MainTab:CreateToggle({
         task.spawn(function()
             while tpFrozen do
                 TeleportToPortal(workspace.DynamicObjects.Worlds.Frozen.WinPortal.Touch)
-                task.wait(1)
+                task.wait(2)
             end
         end)
     end,
