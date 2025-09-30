@@ -1,8 +1,8 @@
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-    Name = "Portal Teleport",
-    LoadingTitle = "Teleport Hub",
+    Name = "Escape The Lava",
+    LoadingTitle = "",
     LoadingSubtitle = "By sondubai",
     ConfigurationSaving = {
         Enabled = false,
