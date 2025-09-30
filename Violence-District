@@ -43,7 +43,7 @@ local function repairMachine(part)
     if part and part:IsA("BasePart") then
         tpTo(part)
         for i = 1, 30 do
-            if not autoRepair then return end -- dừng nếu toggle tắt
+            if not autoRepair then return end
             RepairEvent:FireServer(part, true)
             task.wait(0.2)
         end
