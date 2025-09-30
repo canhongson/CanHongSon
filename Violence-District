@@ -10,8 +10,8 @@ local generatorsFolder = workspace:WaitForChild("Map"):WaitForChild("Generator")
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "Auto Repair",
-   LoadingTitle = "Violence-District",
+   Name = "Violence-District",
+   LoadingTitle = "",
    LoadingSubtitle = "sondubai",
    ConfigurationSaving = {
       Enabled = true,
