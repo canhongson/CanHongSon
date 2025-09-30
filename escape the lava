@@ -1,9 +1,1 @@
-local Players = game:GetService("Players")
-local player = Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local hrp = character:WaitForChild("HumanoidRootPart")
 
-local portal = workspace.DynamicObjects.Worlds.Space.WinPortal:WaitForChild("Touch")
-
--- Teleport tới portal
-hrp.CFrame = portal.CFrame + Vector3.new(0, 5, 0) -- dịch lên 5 để khỏi kẹt
