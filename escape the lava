@@ -1,10 +1,9 @@
-local Rayfield
-pcall(function() Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))() end)
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local hrp = character:WaitForChild("HumanoidRootPart")
 
-if Rayfield then
-    local Window = Rayfield:CreateWindow({
-        Name = "CanHongSon",
-        LoadingTitle = "Loading",
-        LoadingSubtitle = "by SonDuBai",
-        Theme = "Default"
-    })
+local portal = workspace.DynamicObjects.Worlds.Space.WinPortal:WaitForChild("Touch")
+
+-- Teleport tới portal
+hrp.CFrame = portal.CFrame + Vector3.new(0, 5, 0) -- dịch lên 5 để khỏi kẹt
