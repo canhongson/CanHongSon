@@ -4,107 +4,72 @@ local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local uis = game:GetService("UserInputService")
 local camera = workspace.CurrentCamera
-
 local char = player.Character or player.CharacterAdded:Wait()
 local hrp = char:WaitForChild("HumanoidRootPart")
-
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
-local Window = Rayfield:CreateWindow({
-   Name = "Violence-District",
-   LoadingTitle = "",
-   LoadingSubtitle = "sondubai",
-   ConfigurationSaving = {
-      Enabled = true,
-      FolderName = nil,
-      FileName = "conmemay"
-   }
-})
-local MainTab = Window:CreateTab("Main", 4483362458)
-local MiscTab = Window:CreateTab("Misc", 4483362458)
+local Window = Rayfield:CreateWindow({Name="Violence-District",LoadingTitle="",LoadingSubtitle="sondubai",ConfigurationSaving={Enabled=true,FolderName=nil,FileName="conmemay"}})
+local MainTab = Window:CreateTab("Main",4483362458)
+local MiscTab = Window:CreateTab("Misc",4483362458)
 
+local escapeDistance=50
+local escapeDuration=3
+local escapeRadius=10
+local escapeHeight=50
+local escapeCooldown=4
+local isEscaping=false
+local lastEscape=0
 
-local escapeDistance = 100          
-local escapeDuration = 3           
-local escapeRadius = 10          
-local escapeHeight = 50           
-local escapeCooldown = 4           
-
-local isEscaping = false
-local lastEscape = 0
-
-
-local autoRepair = false
+local autoRepair=false
+local isRepairing=false
 local RepairEvent
-if ReplicatedStorage:FindFirstChild("Remotes")
-   and ReplicatedStorage.Remotes:FindFirstChild("Generator")
-   and ReplicatedStorage.Remotes.Generator:FindFirstChild("RepairEvent") then
-    RepairEvent = ReplicatedStorage.Remotes.Generator.RepairEvent
+if ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("Generator") and ReplicatedStorage.Remotes.Generator:FindFirstChild("RepairEvent") then
+    RepairEvent=ReplicatedStorage.Remotes.Generator.RepairEvent
 end
 
-MainTab:CreateToggle({
-    Name = "Auto Generators",
-    CurrentValue = false,
-    Flag = "AutoRepair",
-    Callback = function(Value)
-        autoRepair = Value
-    end,
-})
-
-local function tpTo(part)
-    if hrp and part then
-        pcall(function() hrp.CFrame = part.CFrame end)
-    end
-end
-
--- repairMachine kept simple; escape handled by separate loop
+MainTab:CreateToggle({Name="Auto Generators",CurrentValue=false,Flag="AutoRepair",Callback=function(Value) autoRepair=Value end})
+local function tpTo(part) if hrp and part then pcall(function() hrp.CFrame=part.CFrame end) end end
 local function repairMachine(part)
     if part and part:IsA("BasePart") and RepairEvent then
         tpTo(part)
-        for i = 1, 30 do
-            if not autoRepair then return end
-            -- don't repair while in escape cooldown
-            if tick() - lastEscape < escapeCooldown then
-                task.wait(0.2)
-            else
-                pcall(function() RepairEvent:FireServer(part, true) end)
-                task.wait(0.2)
-            end
+        isRepairing=true
+        for i=1,30 do
+            if not autoRepair then isRepairing=false return end
+            if tick()-lastEscape<escapeCooldown then task.wait(0.2) else pcall(function() RepairEvent:FireServer(part,true) end) task.wait(0.2) end
         end
+        isRepairing=false
     end
 end
 
 task.spawn(function()
     while task.wait(1) do
         if autoRepair and RepairEvent then
-            local generatorsFolder = workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("Generator")
+            local generatorsFolder=workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("Generator")
             if generatorsFolder then
-                for _, machine in ipairs(generatorsFolder:GetChildren()) do
+                for _,machine in ipairs(generatorsFolder:GetChildren()) do
                     if not autoRepair then break end
                     repairMachine(machine)
                 end
             end
+        else
+            isRepairing=false
         end
     end
 end)
 
-
 local function findSafeCenter()
-
-    local map = workspace:FindFirstChild("Map")
+    local map=workspace:FindFirstChild("Map")
     if map then
-        local safe = map:FindFirstChild("SafeZone") or map:FindFirstChild("Safe")
+        local safe=map:FindFirstChild("SafeZone") or map:FindFirstChild("Safe")
         if safe then
             if safe:IsA("Model") then
                 if safe.PrimaryPart then return safe.PrimaryPart.CFrame end
-                for _, v in ipairs(safe:GetDescendants()) do
+                for _,v in ipairs(safe:GetDescendants()) do
                     if v:IsA("BasePart") then return v.CFrame end
                 end
-            elseif safe:IsA("BasePart") then
-                return safe.CFrame
-            end
+            elseif safe:IsA("BasePart") then return safe.CFrame end
         end
     end
-    local spawn = workspace:FindFirstChild("SpawnLocation") or workspace:FindFirstChild("Spawn")
+    local spawn=workspace:FindFirstChild("SpawnLocation") or workspace:FindFirstChild("Spawn")
     if spawn and spawn:IsA("BasePart") then return spawn.CFrame end
     if hrp then return hrp.CFrame end
     return CFrame.new(0,1000,0)
@@ -112,64 +77,50 @@ end
 
 local function startEscape()
     if isEscaping then return end
-    isEscaping = true
-    lastEscape = tick()
-
-    local centerCFrame = findSafeCenter()
-    -- prefer above current position if safe zone too far
-    local centerPos = (hrp and hrp.Position) or centerCFrame.Position
-    local basePos = Vector3.new(centerPos.X, centerPos.Y + escapeHeight, centerPos.Z)
-
-    -- teleport lên trước
-    pcall(function() hrp.CFrame = CFrame.new(basePos) end)
-
-    local startTime = tick()
-    local angle = 0
-    local angularSpeed = (math.pi * 2) / escapeDuration -- full circle trong escapeDuration
-    local center = basePos
-
-    while tick() - startTime < escapeDuration do
-        local t = tick() - startTime
-        angle = angularSpeed * t
-        local x = center.X + math.cos(angle) * escapeRadius
-        local z = center.Z + math.sin(angle) * escapeRadius
-        local y = center.Y
-        -- set CFrame facing center (thoát an toàn)
-        local lookAt = CFrame.new(Vector3.new(x, y, z), center)
-        pcall(function() hrp.CFrame = lookAt end)
+    isEscaping=true
+    lastEscape=tick()
+    local centerPos=(hrp and hrp.Position) or findSafeCenter().Position
+    local basePos=Vector3.new(centerPos.X,centerPos.Y+escapeHeight,centerPos.Z)
+    pcall(function() hrp.CFrame=CFrame.new(basePos) end)
+    local startTime=tick()
+    local angularSpeed=(math.pi*2)/math.max(0.0001,escapeDuration)
+    local center=basePos
+    while tick()-startTime<escapeDuration do
+        local t=tick()-startTime
+        local angle=angularSpeed*t
+        local x=center.X+math.cos(angle)*escapeRadius
+        local z=center.Z+math.sin(angle)*escapeRadius
+        local y=center.Y
+        local lookAt=CFrame.new(Vector3.new(x,y,z),center)
+        pcall(function() hrp.CFrame=lookAt end)
         task.wait(0.03)
     end
-
-    pcall(function() hrp.CFrame = CFrame.new(center) end)
-    lastEscape = tick()
-    task.delay(escapeCooldown, function()
-        isEscaping = false
-    end)
+    pcall(function() hrp.CFrame=CFrame.new(center) end)
+    lastEscape=tick()
+    task.delay(escapeCooldown,function() isEscaping=false end)
 end
 
 local function characterHasWeapon(ch)
     if not ch then return false end
     if ch:FindFirstChild("Weapon") then return true end
     if ch:FindFirstChildWhichIsA("Tool") then return true end
-    if ch:FindFirstChild("Weapon", true) then return true end
+    if ch:FindFirstChild("Weapon",true) then return true end
     return false
 end
 
 task.spawn(function()
     while task.wait(0.4) do
-        if not autoRepair then continue end
+        if not isRepairing then continue end
         if not hrp then continue end
         if isEscaping then continue end
-        if tick() - lastEscape < escapeCooldown then continue end
-
-        for _, pl in ipairs(Players:GetPlayers()) do
-            if pl ~= player and pl.Character and pl.Character.Parent then
+        if tick()-lastEscape<escapeCooldown then continue end
+        for _,pl in ipairs(Players:GetPlayers()) do
+            if pl~=player and pl.Character and pl.Character.Parent then
                 if characterHasWeapon(pl.Character) then
-                    local target = pl.Character:FindFirstChild("HumanoidRootPart") or pl.Character:FindFirstChildWhichIsA("BasePart")
+                    local target=pl.Character:FindFirstChild("HumanoidRootPart") or pl.Character:FindFirstChildWhichIsA("BasePart")
                     if target then
-                        local dist = (hrp.Position - target.Position).Magnitude
-                        if dist <= escapeDistance then
-                            -- bắt đầu escape (teleport lên & vòng)
+                        local dist=(hrp.Position-target.Position).Magnitude
+                        if dist<=escapeDistance then
                             startEscape()
                             break
                         end
@@ -180,199 +131,93 @@ task.spawn(function()
     end
 end)
 
-local noclipEnabled = false
-local savedCollision = {}
-
+local noclipEnabled=false
+local savedCollision={}
 local function saveAndSetCollide(v)
     if not char then return end
-    for _, part in pairs(char:GetDescendants()) do
+    for _,part in pairs(char:GetDescendants()) do
         if part:IsA("BasePart") and not part.Anchored then
-            if v == false then
-                if savedCollision[part] == nil then savedCollision[part] = part.CanCollide end
-                part.CanCollide = false
+            if v==false then
+                if savedCollision[part]==nil then savedCollision[part]=part.CanCollide end
+                part.CanCollide=false
             else
-                if savedCollision[part] ~= nil then
-                    pcall(function() part.CanCollide = savedCollision[part] end)
-                    savedCollision[part] = nil
-                else
-                    pcall(function() part.CanCollide = true end)
-                end
+                if savedCollision[part]~=nil then pcall(function() part.CanCollide=savedCollision[part] end) savedCollision[part]=nil else pcall(function() part.CanCollide=true end) end
             end
         end
     end
 end
 
-MainTab:CreateToggle({
-    Name = "Noclip",
-    CurrentValue = false,
-    Flag = "Noclip",
-    Callback = function(val)
-        noclipEnabled = val
-        if not noclipEnabled then
-            saveAndSetCollide(true)
-        end
-    end,
-})
+MainTab:CreateToggle({Name="Noclip",CurrentValue=false,Flag="Noclip",Callback=function(val) noclipEnabled=val if not noclipEnabled then saveAndSetCollide(true) end end})
+RunService.Stepped:Connect(function() if noclipEnabled then saveAndSetCollide(false) end end)
+player.CharacterAdded:Connect(function(newChar) char=newChar hrp=char:WaitForChild("HumanoidRootPart") if not noclipEnabled then saveAndSetCollide(true) end end)
 
-RunService.Stepped:Connect(function()
-    if noclipEnabled then saveAndSetCollide(false) end
-end)
+local autoWin=false
+MainTab:CreateToggle({Name="Auto Win",CurrentValue=false,Flag="AutoWin",Callback=function(val) autoWin=val end})
+task.spawn(function() while task.wait(1) do if autoWin and hrp then local map=workspace:FindFirstChild("Map") if map and map:FindFirstChild("Fininshline") then pcall(function() hrp.CFrame=map.Fininshline.CFrame+Vector3.new(0,5,0) end) end end end end)
 
-player.CharacterAdded:Connect(function(newChar)
-    char = newChar
-    hrp = char:WaitForChild("HumanoidRootPart")
-    -- restore collision if noclip is off
-    if not noclipEnabled then saveAndSetCollide(true) end
-end)
-
-local autoWin = false
-MainTab:CreateToggle({
-    Name = "Auto Win",
-    CurrentValue = false,
-    Flag = "AutoWin",
-    Callback = function(val) autoWin = val end,
-})
-
-task.spawn(function()
-    while task.wait(1) do
-        if autoWin and hrp then
-            local map = workspace:FindFirstChild("Map")
-            if map and map:FindFirstChild("Fininshline") then
-                pcall(function() hrp.CFrame = map.Fininshline.CFrame + Vector3.new(0,5,0) end)
-            end
-        end
-    end
-end)
-
-local espEnabled = false
-local espTexts = {}
-
-MiscTab:CreateToggle({
-    Name = "ESP Killer",
-    CurrentValue = false,
-    Flag = "ESPWeaponPlayers",
-    Callback = function(val)
-        espEnabled = val
-        for _, t in pairs(espTexts) do pcall(function() t.Visible = false end) end
-    end,
-})
-
-local function createText()
-    local t = Drawing.new("Text")
-    t.Size = 18
-    t.Center = true
-    t.Outline = true
-    t.OutlineColor = Color3.new(0,0,0)
-    t.Color = Color3.fromRGB(255,0,0)
-    t.Visible = false
-    t.Font = 2
-    return t
-end
-
-local function ensureESP(plr)
-    if espTexts[plr] then return end
-    espTexts[plr] = createText()
-end
-
-local function removeESP(plr)
-    if espTexts[plr] then pcall(function() espTexts[plr]:Remove() end) espTexts[plr] = nil end
-end
-
-for _, p in ipairs(Players:GetPlayers()) do
-    if p ~= player then
-        if p.Character then ensureESP(p) end
-        p.CharacterAdded:Connect(function() ensureESP(p) end)
-    end
-end
-Players.PlayerAdded:Connect(function(p) if p ~= player then p.CharacterAdded:Connect(function() ensureESP(p) end) end end)
+local espEnabled=false
+local espTexts={}
+MiscTab:CreateToggle({Name="ESP Killer",CurrentValue=false,Flag="ESPWeaponPlayers",Callback=function(val) espEnabled=val for _,t in pairs(espTexts) do pcall(function() t.Visible=false end) end end})
+local function createText() local t=Drawing.new("Text") t.Size=18 t.Center=true t.Outline=true t.OutlineColor=Color3.new(0,0,0) t.Color=Color3.fromRGB(255,0,0) t.Visible=false t.Font=2 return t end
+local function ensureESP(plr) if espTexts[plr] then return end espTexts[plr]=createText() end
+local function removeESP(plr) if espTexts[plr] then pcall(function() espTexts[plr]:Remove() end) espTexts[plr]=nil end end
+for _,p in ipairs(Players:GetPlayers()) do if p~=player then if p.Character then ensureESP(p) end p.CharacterAdded:Connect(function() ensureESP(p) end) end end
+Players.PlayerAdded:Connect(function(p) if p~=player then p.CharacterAdded:Connect(function() ensureESP(p) end) end end)
 Players.PlayerRemoving:Connect(removeESP)
 
 RunService.RenderStepped:Connect(function()
     if not espEnabled then return end
-    if not hrp or not hrp.Parent then hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart") if not hrp then return end end
-
-    for plr, txt in pairs(espTexts) do
-        if not plr or plr == player then pcall(function() txt.Visible = false end) else
-            local c = plr.Character
-            local target = c and (c:FindFirstChild("HumanoidRootPart") or c:FindFirstChildWhichIsA("BasePart"))
-            local ok = c and characterHasWeapon(c)
+    if not hrp or not hrp.Parent then hrp=player.Character and player.Character:FindFirstChild("HumanoidRootPart") if not hrp then return end end
+    for plr,txt in pairs(espTexts) do
+        if not plr or plr==player then pcall(function() txt.Visible=false end) else
+            local c=plr.Character
+            local target=c and (c:FindFirstChild("HumanoidRootPart") or c:FindFirstChildWhichIsA("BasePart"))
+            local ok=c and characterHasWeapon(c)
             if target and ok then
-                local pos2d, onScreen = camera:WorldToViewportPoint(target.Position + Vector3.new(0,-2,0))
+                local pos2d,onScreen=camera:WorldToViewportPoint(target.Position+Vector3.new(0,-2,0))
                 if onScreen then
-                    local dist = (hrp.Position - target.Position).Magnitude
-                    txt.Text = plr.Name.." ("..(dist>=1000 and string.format("%.2f km",dist/1000) or string.format("%.0f m",dist))..")"
-                    txt.Position = Vector2.new(pos2d.X,pos2d.Y)
-                    txt.Visible = true
-                else
-                    txt.Visible = false
-                end
-            else
-                txt.Visible = false
-            end
+                    local dist=(hrp.Position-target.Position).Magnitude
+                    txt.Text=plr.Name.." ("..(dist>=1000 and string.format("%.2f km",dist/1000) or string.format("%.0f m",dist))..")"
+                    txt.Position=Vector2.new(pos2d.X,pos2d.Y)
+                    txt.Visible=true
+                else txt.Visible=false end
+            else txt.Visible=false end
         end
     end
 end)
 
-local flySpeed = 50
-local flying = false
-local flyDir = Vector3.new()
+local flySpeed=50
+local flying=false
+local flyDir=Vector3.new()
 local bodyVelocity
-
-local isMobile = uis.TouchEnabled and not uis.KeyboardEnabled
-local mobileUp, mobileDown = false, false
-
-MiscTab:CreateToggle({
-    Name = "Fly",
-    CurrentValue = false,
-    Flag = "FlyToggle",
-    Callback = function(val)
-        flying = val
-        if flying and hrp then
-            bodyVelocity = Instance.new("BodyVelocity")
-            bodyVelocity.MaxForce = Vector3.new(1e5,1e5,1e5)
-            bodyVelocity.Velocity = Vector3.new(0,0,0)
-            bodyVelocity.Parent = hrp
-        else
-            if bodyVelocity then bodyVelocity:Destroy() bodyVelocity = nil end
-        end
-    end,
-})
+local isMobile=uis.TouchEnabled and not uis.KeyboardEnabled
+local mobileUp,mobileDown=false,false
+MiscTab:CreateToggle({Name="Fly",CurrentValue=false,Flag="FlyToggle",Callback=function(val) flying=val if flying and hrp then bodyVelocity=Instance.new("BodyVelocity") bodyVelocity.MaxForce=Vector3.new(1e5,1e5,1e5) bodyVelocity.Velocity=Vector3.new(0,0,0) bodyVelocity.Parent=hrp else if bodyVelocity then bodyVelocity:Destroy() bodyVelocity=nil end end end})
 
 if isMobile then
-    uis.TouchStarted:Connect(function(inp)
-        if inp.UserInputType == Enum.UserInputType.Touch then
-            if inp.Position.Y < workspace.CurrentCamera.ViewportSize.Y/2 then mobileUp = true else mobileDown = true end
-        end
-    end)
-    uis.TouchEnded:Connect(function(inp) if inp.UserInputType == Enum.UserInputType.Touch then mobileUp = false mobileDown = false end end)
+    uis.TouchStarted:Connect(function(inp) if inp.UserInputType==Enum.UserInputType.Touch then if inp.Position.Y<workspace.CurrentCamera.ViewportSize.Y/2 then mobileUp=true else mobileDown=true end end end)
+    uis.TouchEnded:Connect(function(inp) if inp.UserInputType==Enum.UserInputType.Touch then mobileUp=false mobileDown=false end end)
 end
 
 RunService.RenderStepped:Connect(function()
     if flying and bodyVelocity and hrp then
-        local cam = workspace.CurrentCamera.CFrame
-        flyDir = Vector3.new(0,0,0)
+        local cam=workspace.CurrentCamera.CFrame
+        flyDir=Vector3.new(0,0,0)
         if not isMobile then
-            if uis:IsKeyDown(Enum.KeyCode.W) then flyDir += cam.LookVector end
-            if uis:IsKeyDown(Enum.KeyCode.S) then flyDir -= cam.LookVector end
-            if uis:IsKeyDown(Enum.KeyCode.A) then flyDir -= cam.RightVector end
-            if uis:IsKeyDown(Enum.KeyCode.D) then flyDir += cam.RightVector end
-            if uis:IsKeyDown(Enum.KeyCode.Space) then flyDir += Vector3.new(0,1,0) end
-            if uis:IsKeyDown(Enum.KeyCode.LeftControl) then flyDir -= Vector3.new(0,1,0) end
+            if uis:IsKeyDown(Enum.KeyCode.W) then flyDir+=cam.LookVector end
+            if uis:IsKeyDown(Enum.KeyCode.S) then flyDir-=cam.LookVector end
+            if uis:IsKeyDown(Enum.KeyCode.A) then flyDir-=cam.RightVector end
+            if uis:IsKeyDown(Enum.KeyCode.D) then flyDir+=cam.RightVector end
+            if uis:IsKeyDown(Enum.KeyCode.Space) then flyDir+=Vector3.new(0,1,0) end
+            if uis:IsKeyDown(Enum.KeyCode.LeftControl) then flyDir-=Vector3.new(0,1,0) end
         else
-            if mobileUp then flyDir += Vector3.new(0,1,0) end
-            if mobileDown then flyDir -= Vector3.new(0,1,0) end
-            if uis:IsTouching() then flyDir += cam.LookVector end
+            if mobileUp then flyDir+=Vector3.new(0,1,0) end
+            if mobileDown then flyDir-=Vector3.new(0,1,0) end
+            if uis:IsTouching() then flyDir+=cam.LookVector end
         end
-        if flyDir.Magnitude ~= 0 then flyDir = flyDir.Unit * flySpeed end
-        bodyVelocity.Velocity = flyDir
+        if flyDir.Magnitude~=0 then flyDir=flyDir.Unit*flySpeed end
+        bodyVelocity.Velocity=flyDir
     end
 end)
 
-player.CharacterAdded:Connect(function(nc)
-    char = nc
-    hrp = char:WaitForChild("HumanoidRootPart")
-    -- if fly was active, reparent bodyVelocity
-    if flying and bodyVelocity then bodyVelocity.Parent = hrp end
-    -- restore collision if noclip off
-    if not noclipEnabled then saveAndSetCollide(true) end
-end)
+player.CharacterAdded:Connect(function(nc) char=nc hrp=char:WaitForChild("HumanoidRootPart") if flying and bodyVelocity then bodyVelocity.Parent=hrp end if not noclipEnabled then saveAndSetCollide(true) end end)
