@@ -19,9 +19,13 @@ local MainTab = Window:CreateTab("Main", 4483362458)
 local MiscTab = Window:CreateTab("Misc", 4483362458)
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local camera = workspace.CurrentCamera
+local uis = game:GetService("UserInputService")
+
 local autoRepair = false
 local RepairEvent
-
 if ReplicatedStorage:FindFirstChild("Remotes") 
    and ReplicatedStorage.Remotes:FindFirstChild("Generator") 
    and ReplicatedStorage.Remotes.Generator:FindFirstChild("RepairEvent") then
@@ -69,6 +73,15 @@ task.spawn(function()
 end)
 
 local noclipEnabled = false
+local function setCanCollide(value)
+    if char then
+        for _, part in pairs(char:GetDescendants()) do
+            if part:IsA("BasePart") and not part.Anchored then
+                part.CanCollide = value
+            end
+        end
+    end
+end
 
 MainTab:CreateToggle({
     Name = "Noclip",
@@ -76,30 +89,27 @@ MainTab:CreateToggle({
     Flag = "Noclip",
     Callback = function(val)
         noclipEnabled = val
-        if not noclipEnabled and char then
-            for _, part in pairs(char:GetDescendants()) do
-                if part:IsA("BasePart") and not part.Anchored then
-                    part.CanCollide = true
-                end
-            end
+        if not noclipEnabled then
+            setCanCollide(true)
         end
     end,
 })
 
-local RunService = game:GetService("RunService")
-
 RunService.Stepped:Connect(function()
-    if noclipEnabled and char then
-        for _, part in pairs(char:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.CanCollide = false
-            end
-        end
+    if noclipEnabled then
+        setCanCollide(false)
+    end
+end)
+
+player.CharacterAdded:Connect(function(newChar)
+    char = newChar
+    hrp = char:WaitForChild("HumanoidRootPart")
+    if not noclipEnabled then
+        setCanCollide(true)
     end
 end)
 
 local autoWin = false
-
 MainTab:CreateToggle({
     Name = "Auto Win",
     CurrentValue = false,
@@ -119,9 +129,6 @@ task.spawn(function()
         end
     end
 end)
-
-local Players = game:GetService("Players")
-local camera = workspace.CurrentCamera
 
 local espEnabled = false
 local espTexts = {}
@@ -226,8 +233,6 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
-local mouse = player:GetMouse()
-local uis = game:GetService("UserInputService")
 local flySpeed = 50
 local flying = false
 local flyDirection = Vector3.new()
@@ -264,7 +269,7 @@ RunService.RenderStepped:Connect(function()
         if uis:IsKeyDown(Enum.KeyCode.Space) then flyDirection += Vector3.new(0,1,0) end
         if uis:IsKeyDown(Enum.KeyCode.LeftControl) then flyDirection -= Vector3.new(0,1,0) end
 
-                if flyDirection.Magnitude ~= 0 then
+        if flyDirection.Magnitude ~= 0 then
             flyDirection = flyDirection.Unit * flySpeed
         end
         bodyVelocity.Velocity = flyDirection
