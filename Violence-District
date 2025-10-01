@@ -13,7 +13,7 @@ local Window = Rayfield:CreateWindow({
       FolderName = thangchamay,
       FileName = "conmemay"
    },
-   KeySystem = true, -- Bật KeySystem
+   KeySystem = true,
    KeySettings = {
       Title = "",
       Subtitle = "Key System",
