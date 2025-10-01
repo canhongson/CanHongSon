@@ -1,124 +1,74 @@
+-- Full script: Violence-District
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local uis = game:GetService("UserInputService")
 local camera = workspace.CurrentCamera
+
 local char = player.Character or player.CharacterAdded:Wait()
 local hrp = char:WaitForChild("HumanoidRootPart")
+
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
-local Window = Rayfield:CreateWindow({Name="Violence-District",LoadingTitle="",LoadingSubtitle="sondubai",ConfigurationSaving={Enabled=true,FolderName=nil,FileName="conmemay"}})
-local MainTab = Window:CreateTab("Main",4483362458)
-local MiscTab = Window:CreateTab("Misc",4483362458)
+local Window = Rayfield:CreateWindow({
+   Name = "Violence-District",
+   LoadingTitle = "",
+   LoadingSubtitle = "sondubai",
+   ConfigurationSaving = {Enabled=true, FolderName=nil, FileName="conmemay"}
+})
+local MainTab = Window:CreateTab("Main", 4483362458)
+local MiscTab = Window:CreateTab("Misc", 4483362458)
 
-local escapeDistance = 50
-local escapeCooldown = 4
-
-local isEscaping = false
-local lastEscape = 0
-
-local autoRepair = false
-local isRepairing = false
+local autoRepair=false
+local isRepairing=false
 local RepairEvent
 if ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("Generator") and ReplicatedStorage.Remotes.Generator:FindFirstChild("RepairEvent") then
     RepairEvent = ReplicatedStorage.Remotes.Generator.RepairEvent
 end
 
-MainTab:CreateToggle({Name="Auto Generators",CurrentValue=false,Callback=function(v) autoRepair=v end})
+MainTab:CreateToggle({Name="Auto Generators", CurrentValue=false, Flag="AutoRepair", Callback=function(v) autoRepair=v end})
 
-local function tpTo(part) if hrp and part then pcall(function() hrp.CFrame = part.CFrame end) end end
+local function tpTo(part) if hrp and part then pcall(function() hrp.CFrame=part.CFrame end) end end
 
-local savedTransparency = {}
-local savedCollision = {}
-
-local function hideCharacter()
-    if not char then return end
-    for _, part in pairs(char:GetDescendants()) do
-        if part:IsA("BasePart") then
-            if savedTransparency[part] == nil then savedTransparency[part] = part.Transparency end
-            if savedCollision[part] == nil then savedCollision[part] = part.CanCollide end
-            pcall(function() part.Transparency = 1; part.CanCollide = false end)
-        end
-    end
-end
-
-local function restoreCharacter()
-    if not char then return end
-    for part,trans in pairs(savedTransparency) do
-        if part and part.Parent then pcall(function() part.Transparency = trans end) end
-    end
-    for part,coll in pairs(savedCollision) do
-        if part and part.Parent then pcall(function() part.CanCollide = coll end) end
-    end
-    savedTransparency = {}
-    savedCollision = {}
-end
-
-local function teleportToLobby()
+local function teleportToLobbyModel()
     local lobby = workspace:FindFirstChild("Lobby")
-    if not lobby then
-        return false
-    end
-    if lobby:IsA("Model") then
-        if lobby.PrimaryPart then
-            pcall(function() hrp.CFrame = lobby.PrimaryPart.CFrame + Vector3.new(0,5,0) end)
-            return true
-        else
-            for _,v in ipairs(lobby:GetDescendants()) do
-                if v:IsA("BasePart") then
-                    pcall(function() hrp.CFrame = v.CFrame + Vector3.new(0,5,0) end)
-                    return true
-                end
-            end
-            return false
-        end
-    elseif lobby:IsA("BasePart") then
-        pcall(function() hrp.CFrame = lobby.CFrame + Vector3.new(0,5,0) end)
-        return true
-    end
-    return false
-end
-
-local function startEscapeToLobby()
-    if isEscaping then return end
-    isEscaping = true
-    lastEscape = tick()
-
-    local succeeded = teleportToLobby()
-    hideCharacter()
-
-    if not succeeded then
-        -- fallback: move up a bit if lobby not found
-        local originPos = (hrp and hrp.Position) or Vector3.new(0,50,0)
-        pcall(function() hrp.CFrame = CFrame.new(originPos + Vector3.new(0,100,0)) end)
-    end
-
-    task.wait(0.8)
-    restoreCharacter()
-
-    lastEscape = tick()
-    task.delay(escapeCooldown, function() isEscaping = false end)
-end
-
-local function characterHasWeapon(ch)
-    if not ch then return false end
-    if ch:FindFirstChild("Weapon") then return true end
-    if ch:FindFirstChildWhichIsA("Tool") then return true end
-    if ch:FindFirstChild("Weapon", true) then return true end
-    return false
+    if not lobby then return false end
+    local model = lobby:FindFirstChild("Model")
+    if not model then return false end
+    local partToUse = model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart")
+    if not partToUse then return false end
+    if hrp then pcall(function() hrp.CFrame = partToUse.CFrame + Vector3.new(0,5,0) end) end
+    return true
 end
 
 local function repairMachine(part)
     if part and part:IsA("BasePart") and RepairEvent then
         tpTo(part)
-        isRepairing = true
+        isRepairing=true
         for i=1,30 do
             if not autoRepair then isRepairing=false return end
-            if isEscaping then task.wait(0.2) else
-                if tick() - lastEscape < escapeCooldown then task.wait(0.2) else pcall(function() RepairEvent:FireServer(part, true) end) task.wait(0.2) end
+            local killerNear=false
+            for _,pl in ipairs(Players:GetPlayers()) do
+                if pl~=player and pl.Character and pl.Character.Parent then
+                    local c=pl.Character
+                    local weapon=c:FindFirstChild("Weapon") or c:FindFirstChildWhichIsA("Tool") or c:FindFirstChild("Weapon",true)
+                    if weapon then
+                        local target=c:FindFirstChild("HumanoidRootPart") or c:FindFirstChildWhichIsA("BasePart")
+                        if target and hrp then
+                            local dist=(hrp.Position-target.Position).Magnitude
+                            if dist<=50 then killerNear=true break end
+                        end
+                    end
+                end
             end
+            if killerNear then
+                teleportToLobbyModel()
+                task.wait(1)
+            end
+            pcall(function() RepairEvent:FireServer(part,true) end)
+            task.wait(0.2)
         end
-        isRepairing = false
+        isRepairing=false
     end
 end
 
@@ -127,38 +77,12 @@ task.spawn(function()
         if autoRepair and RepairEvent then
             local generatorsFolder = workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("Generator")
             if generatorsFolder then
-                for _, machine in ipairs(generatorsFolder:GetChildren()) do
+                for _,machine in ipairs(generatorsFolder:GetChildren()) do
                     if not autoRepair then break end
                     repairMachine(machine)
                 end
             end
-        else
-            isRepairing=false
-        end
-    end
-end)
-
-task.spawn(function()
-    while task.wait(0.35) do
-        if not isRepairing then continue end
-        if not hrp then continue end
-        if isEscaping then continue end
-        if tick() - lastEscape < escapeCooldown then continue end
-
-        for _, pl in ipairs(Players:GetPlayers()) do
-            if pl~=player and pl.Character and pl.Character.Parent then
-                if characterHasWeapon(pl.Character) then
-                    local target = pl.Character:FindFirstChild("HumanoidRootPart") or pl.Character:FindFirstChildWhichIsA("BasePart")
-                    if target then
-                        local dist = (hrp.Position - target.Position).Magnitude
-                        if dist <= escapeDistance then
-                            startEscapeToLobby()
-                            break
-                        end
-                    end
-                end
-            end
-        end
+        else isRepairing=false end
     end
 end)
 
@@ -166,11 +90,11 @@ local noclipEnabled=false
 local savedCollision={}
 local function saveAndSetCollide(v)
     if not char then return end
-    for _, part in pairs(char:GetDescendants()) do
+    for _,part in pairs(char:GetDescendants()) do
         if part:IsA("BasePart") and not part.Anchored then
             if v==false then
                 if savedCollision[part]==nil then savedCollision[part]=part.CanCollide end
-                pcall(function() part.CanCollide=false end)
+                part.CanCollide=false
             else
                 if savedCollision[part]~=nil then pcall(function() part.CanCollide=savedCollision[part] end) savedCollision[part]=nil else pcall(function() part.CanCollide=true end) end
             end
@@ -178,28 +102,54 @@ local function saveAndSetCollide(v)
     end
 end
 
-MainTab:CreateToggle({Name="Noclip",CurrentValue=false,Callback=function(v) noclipEnabled=v if not v then saveAndSetCollide(true) end end})
+MainTab:CreateToggle({Name="Noclip", CurrentValue=false, Flag="Noclip", Callback=function(v)
+    noclipEnabled=v
+    if not noclipEnabled then saveAndSetCollide(true) end
+end})
+
 RunService.Stepped:Connect(function() if noclipEnabled then saveAndSetCollide(false) end end)
 player.CharacterAdded:Connect(function(nc) char=nc hrp=char:WaitForChild("HumanoidRootPart") if not noclipEnabled then saveAndSetCollide(true) end end)
 
 local autoWin=false
-MainTab:CreateToggle({Name="Auto Win",CurrentValue=false,Callback=function(v) autoWin=v end})
-task.spawn(function() while task.wait(1) do if autoWin and hrp then local map=workspace:FindFirstChild("Map") if map and map:FindFirstChild("Fininshline") then pcall(function() hrp.CFrame=map.Fininshline.CFrame+Vector3.new(0,5,0) end) end end end end)
+MainTab:CreateToggle({Name="Auto Win", CurrentValue=false, Flag="AutoWin", Callback=function(v) autoWin=v end})
+task.spawn(function()
+    while task.wait(1) do
+        if autoWin and hrp then
+            local map = workspace:FindFirstChild("Map")
+            if map and map:FindFirstChild("Fininshline") then
+                pcall(function() hrp.CFrame = map.Fininshline.CFrame + Vector3.new(0,5,0) end)
+            end
+        end
+    end
+end)
 
 local espEnabled=false
 local espTexts={}
-MiscTab:CreateToggle({Name="ESP Killer",CurrentValue=false,Callback=function(v) espEnabled=v for _,t in pairs(espTexts) do pcall(function() t.Visible=false end) end end})
+MiscTab:CreateToggle({Name="ESP Killer", CurrentValue=false, Flag="ESPWeaponPlayers", Callback=function(v)
+    espEnabled=v
+    for _,t in pairs(espTexts) do pcall(function() t.Visible=false end) end
+end})
+
 local function createText() local t=Drawing.new("Text") t.Size=18 t.Center=true t.Outline=true t.OutlineColor=Color3.new(0,0,0) t.Color=Color3.fromRGB(255,0,0) t.Visible=false t.Font=2 return t end
-local function ensureESP(plr) if espTexts[plr] then return end espTexts[plr]=createText() end
-local function removeESP(plr) if espTexts[plr] then pcall(function() espTexts[plr]:Remove() end) espTexts[plr]=nil end end
-for _, p in ipairs(Players:GetPlayers()) do if p~=player then if p.Character then ensureESP(p) end p.CharacterAdded:Connect(function() ensureESP(p) end) end end
+local function ensureESP(p) if espTexts[p] then return end espTexts[p]=createText() end
+local function removeESP(p) if espTexts[p] then pcall(function() espTexts[p]:Remove() end) espTexts[p]=nil end end
+
+for _,p in ipairs(Players:GetPlayers()) do if p~=player then if p.Character then ensureESP(p) end p.CharacterAdded:Connect(function() ensureESP(p) end) end end
 Players.PlayerAdded:Connect(function(p) if p~=player then p.CharacterAdded:Connect(function() ensureESP(p) end) end end)
 Players.PlayerRemoving:Connect(removeESP)
+
+local function characterHasWeapon(ch)
+    if not ch then return false end
+    if ch:FindFirstChild("Weapon") then return true end
+    if ch:FindFirstChildWhichIsA("Tool") then return true end
+    if ch:FindFirstChild("Weapon",true) then return true end
+    return false
+end
 
 RunService.RenderStepped:Connect(function()
     if not espEnabled then return end
     if not hrp or not hrp.Parent then hrp=player.Character and player.Character:FindFirstChild("HumanoidRootPart") if not hrp then return end end
-    for plr, txt in pairs(espTexts) do
+    for plr,txt in pairs(espTexts) do
         if not plr or plr==player then pcall(function() txt.Visible=false end) else
             local c=plr.Character
             local target=c and (c:FindFirstChild("HumanoidRootPart") or c:FindFirstChildWhichIsA("BasePart"))
@@ -224,10 +174,24 @@ local bodyVelocity
 local isMobile=uis.TouchEnabled and not uis.KeyboardEnabled
 local mobileUp,mobileDown=false,false
 
-MiscTab:CreateToggle({Name="Fly",CurrentValue=false,Callback=function(v) flying=v if flying and hrp then bodyVelocity=Instance.new("BodyVelocity") bodyVelocity.MaxForce=Vector3.new(1e5,1e5,1e5) bodyVelocity.Velocity=Vector3.new(0,0,0) bodyVelocity.Parent=hrp else if bodyVelocity then bodyVelocity:Destroy() bodyVelocity=nil end end end})
+MiscTab:CreateToggle({Name="Fly", CurrentValue=false, Flag="FlyToggle", Callback=function(v)
+    flying=v
+    if flying and hrp then
+        bodyVelocity=Instance.new("BodyVelocity")
+        bodyVelocity.MaxForce=Vector3.new(1e5,1e5,1e5)
+        bodyVelocity.Velocity=Vector3.new(0,0,0)
+        bodyVelocity.Parent=hrp
+    else
+        if bodyVelocity then bodyVelocity:Destroy() bodyVelocity=nil end
+    end
+end})
 
 if isMobile then
-    uis.TouchStarted:Connect(function(inp) if inp.UserInputType==Enum.UserInputType.Touch then if inp.Position.Y<workspace.CurrentCamera.ViewportSize.Y/2 then mobileUp=true else mobileDown=true end end end)
+    uis.TouchStarted:Connect(function(inp)
+        if inp.UserInputType==Enum.UserInputType.Touch then
+            if inp.Position.Y<workspace.CurrentCamera.ViewportSize.Y/2 then mobileUp=true else mobileDown=true end
+        end
+    end)
     uis.TouchEnded:Connect(function(inp) if inp.UserInputType==Enum.UserInputType.Touch then mobileUp=false mobileDown=false end end)
 end
 
@@ -252,4 +216,9 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
-player.CharacterAdded:Connect(function(nc) char=nc hrp=char:WaitForChild("HumanoidRootPart") if flying and bodyVelocity then bodyVelocity.Parent=hrp end if not noclipEnabled then saveAndSetCollide(true) end end)
+player.CharacterAdded:Connect(function(nc)
+    char=nc
+    hrp=char:WaitForChild("HumanoidRootPart")
+    if flying and bodyVelocity then bodyVelocity.Parent=hrp end
+    if not noclipEnabled then saveAndSetCollide(true) end
+end)
