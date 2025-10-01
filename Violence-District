@@ -1,11 +1,7 @@
+--// Khởi tạo UI
 local player = game:GetService("Players").LocalPlayer
 local char = player.Character or player.CharacterAdded:Wait()
 local hrp = char:WaitForChild("HumanoidRootPart")
-
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RepairEvent = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Generator"):WaitForChild("RepairEvent")
-
-local generatorsFolder = workspace:WaitForChild("Map"):WaitForChild("Generator")
 
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
@@ -21,21 +17,30 @@ local Window = Rayfield:CreateWindow({
 })
 
 local MainTab = Window:CreateTab("Main", 4483362458)
+local MiscTab = Window:CreateTab("Misc", 4483362458)
 
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local autoRepair = false
+local RepairEvent
+
+if ReplicatedStorage:FindFirstChild("Remotes") 
+   and ReplicatedStorage.Remotes:FindFirstChild("Generator") 
+   and ReplicatedStorage.Remotes.Generator:FindFirstChild("RepairEvent") then
+    RepairEvent = ReplicatedStorage.Remotes.Generator.RepairEvent
+end
 
 MainTab:CreateToggle({
-   Name = "Auto Generators",
-   CurrentValue = false,
-   Flag = "AutoRepair",
-   Callback = function(Value)
-       autoRepair = Value
-   end,
+    Name = "Auto Generators",
+    CurrentValue = false,
+    Flag = "AutoRepair",
+    Callback = function(Value)
+        autoRepair = Value
+    end,
 })
 
 local function tpTo(part)
     if hrp and part then
-        hrp.CFrame = part.CFrame + Vector3.new(0, 0, 0)
+        hrp.CFrame = part.CFrame
     end
 end
 
@@ -52,11 +57,222 @@ end
 
 task.spawn(function()
     while task.wait(1) do
-        if autoRepair then
-            for _, machine in ipairs(generatorsFolder:GetChildren()) do
-                if not autoRepair then break end
-                repairMachine(machine)
+        if autoRepair and RepairEvent then
+            local generatorsFolder = workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("Generator")
+            if generatorsFolder then
+                for _, machine in ipairs(generatorsFolder:GetChildren()) do
+                    if not autoRepair then break end
+                    repairMachine(machine)
+                end
             end
         end
     end
+end)
+
+local noclipEnabled = false
+
+MainTab:CreateToggle({
+    Name = "Noclip",
+    CurrentValue = false,
+    Flag = "Noclip",
+    Callback = function(val)
+        noclipEnabled = val
+        if not noclipEnabled and char then
+            for _, part in pairs(char:GetDescendants()) do
+                if part:IsA("BasePart") and not part.Anchored then
+                    part.CanCollide = true
+                end
+            end
+        end
+    end,
+})
+
+local RunService = game:GetService("RunService")
+
+RunService.Stepped:Connect(function()
+    if noclipEnabled and char then
+        for _, part in pairs(char:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = false
+            end
+        end
+    end
+end)
+
+local autoWin = false
+
+MainTab:CreateToggle({
+    Name = "Auto Win",
+    CurrentValue = false,
+    Flag = "AutoWin",
+    Callback = function(val)
+        autoWin = val
+    end,
+})
+
+task.spawn(function()
+    while task.wait(1) do
+        if autoWin then
+            local map = workspace:FindFirstChild("Map")
+            if map and map:FindFirstChild("Fininshline") and hrp then
+                hrp.CFrame = map.Fininshline.CFrame + Vector3.new(0,5,0)
+            end
+        end
+    end
+end)
+
+local Players = game:GetService("Players")
+local camera = workspace.CurrentCamera
+
+local espEnabled = false
+local espTexts = {}
+
+MiscTab:CreateToggle({
+    Name = "ESP Killer",
+    CurrentValue = false,
+    Flag = "ESPWeaponPlayers",
+    Callback = function(val)
+        espEnabled = val
+        for plr, txt in pairs(espTexts) do
+            txt.Visible = false
+        end
+    end,
+})
+
+local function createText()
+    local t = Drawing.new("Text")
+    t.Size = 18
+    t.Center = true
+    t.Outline = true
+    t.OutlineColor = Color3.new(0,0,0)
+    t.Color = Color3.fromRGB(255,0,0)
+    t.Visible = false
+    t.Font = 2
+    return t
+end
+
+local function onCharacterAdded(newChar)
+    char = newChar
+    hrp = nil
+    pcall(function() hrp = char:WaitForChild("HumanoidRootPart",5) end)
+end
+player.CharacterAdded:Connect(onCharacterAdded)
+
+local function hasWeapon(character)
+    if not character then return false end
+    if character:FindFirstChild("Weapon") then return true end
+    if character:FindFirstChildWhichIsA("Tool") then return true end
+    if character:FindFirstChild("Weapon", true) then return true end
+    return false
+end
+
+local function ensureESPForPlayer(plr)
+    if espTexts[plr] then return end
+    espTexts[plr] = createText()
+end
+
+local function removeESPForPlayer(plr)
+    if espTexts[plr] then
+        pcall(function() espTexts[plr]:Remove() end)
+        espTexts[plr] = nil
+    end
+end
+
+for _, plr in pairs(Players:GetPlayers()) do
+    if plr ~= player then
+        if plr.Character then ensureESPForPlayer(plr) end
+        plr.CharacterAdded:Connect(function() ensureESPForPlayer(plr) end)
+    end
+end
+
+Players.PlayerAdded:Connect(function(plr)
+    if plr ~= player then
+        plr.CharacterAdded:Connect(function() ensureESPForPlayer(plr) end)
+    end
+end)
+
+Players.PlayerRemoving:Connect(removeESPForPlayer)
+
+RunService.RenderStepped:Connect(function()
+    if not espEnabled then return end
+    if not hrp or not hrp.Parent then
+        if player.Character then
+            hrp = player.Character:FindFirstChild("HumanoidRootPart")
+        end
+        if not hrp then return end
+    end
+
+    for plr, txt in pairs(espTexts) do
+        if not plr or plr == player then
+            txt.Visible = false
+        else
+            local c = plr.Character
+            local targetPart = c and (c:FindFirstChild("HumanoidRootPart") or c:FindFirstChildWhichIsA("BasePart"))
+            local okWeapon = c and (c:FindFirstChild("Weapon") or c:FindFirstChildWhichIsA("Tool") or c:FindFirstChild("Weapon", true))
+
+            if targetPart and okWeapon then
+                local pos2d, onScreen = camera:WorldToViewportPoint(targetPart.Position + Vector3.new(0, -2, 0))
+                if onScreen then
+                    local dist = (player.Character.HumanoidRootPart.Position - targetPart.Position).Magnitude
+                    txt.Text = plr.Name.." ("..(dist>=1000 and string.format("%.2f km",dist/1000) or string.format("%.0f m",dist))..")"
+                    txt.Position = Vector2.new(pos2d.X,pos2d.Y)
+                    txt.Visible = true
+                else
+                    txt.Visible = false
+                end
+            else
+                txt.Visible = false
+            end
+        end
+    end
+end)
+
+local mouse = player:GetMouse()
+local uis = game:GetService("UserInputService")
+local flySpeed = 50
+local flying = false
+local flyDirection = Vector3.new()
+local bodyVelocity
+
+MiscTab:CreateToggle({
+    Name = "Fly",
+    CurrentValue = false,
+    Flag = "FlyToggle",
+    Callback = function(val)
+        flying = val
+        if flying then
+            bodyVelocity = Instance.new("BodyVelocity")
+            bodyVelocity.MaxForce = Vector3.new(1e5,1e5,1e5)
+            bodyVelocity.Velocity = Vector3.new(0,0,0)
+            bodyVelocity.Parent = hrp
+        else
+            if bodyVelocity then
+                bodyVelocity:Destroy()
+                bodyVelocity = nil
+            end
+        end
+    end,
+})
+
+RunService.RenderStepped:Connect(function()
+    if flying and bodyVelocity and hrp then
+        local camCF = workspace.CurrentCamera.CFrame
+        flyDirection = Vector3.new(0,0,0)
+        if uis:IsKeyDown(Enum.KeyCode.W) then flyDirection += camCF.LookVector end
+        if uis:IsKeyDown(Enum.KeyCode.S) then flyDirection -= camCF.LookVector end
+        if uis:IsKeyDown(Enum.KeyCode.A) then flyDirection -= camCF.RightVector end
+        if uis:IsKeyDown(Enum.KeyCode.D) then flyDirection += camCF.RightVector end
+        if uis:IsKeyDown(Enum.KeyCode.Space) then flyDirection += Vector3.new(0,1,0) end
+        if uis:IsKeyDown(Enum.KeyCode.LeftControl) then flyDirection -= Vector3.new(0,1,0) end
+
+                if flyDirection.Magnitude ~= 0 then
+            flyDirection = flyDirection.Unit * flySpeed
+        end
+        bodyVelocity.Velocity = flyDirection
+    end
+end)
+
+player.CharacterAdded:Connect(function(newChar)
+    char = newChar
+    hrp = char:WaitForChild("HumanoidRootPart")
 end)
