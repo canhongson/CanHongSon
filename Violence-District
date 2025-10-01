@@ -1,4 +1,3 @@
--- Full script: Violence-District
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 local RunService = game:GetService("RunService")
