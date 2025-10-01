@@ -23,7 +23,7 @@ local MainTab = Window:CreateTab("Main", 4483362458)
 local MiscTab = Window:CreateTab("Misc", 4483362458)
 
 
-local escapeDistance = 50          
+local escapeDistance = 100          
 local escapeDuration = 3           
 local escapeRadius = 10          
 local escapeHeight = 50           
