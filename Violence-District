@@ -12,6 +12,16 @@ local Window = Rayfield:CreateWindow({
       Enabled = true,
       FolderName = thangchamay,
       FileName = "conmemay"
+   },
+   KeySystem = true, -- Bật KeySystem
+   KeySettings = {
+      Title = "",
+      Subtitle = "Key System",
+      Note = "No method of obtaining the key is provided",
+      FileName = "Key",
+      SaveKey = true,
+      GrabKeyFromSite = false,
+      Key = {"taolacho"}
    }
 })
 
