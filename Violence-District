@@ -4,10 +4,8 @@ local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local uis = game:GetService("UserInputService")
 local camera = workspace.CurrentCamera
-
 local char = player.Character or player.CharacterAdded:Wait()
 local hrp = char:WaitForChild("HumanoidRootPart")
-
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 local Window = Rayfield:CreateWindow({
    Name = "Violence-District",
@@ -17,18 +15,14 @@ local Window = Rayfield:CreateWindow({
 })
 local MainTab = Window:CreateTab("Main", 4483362458)
 local MiscTab = Window:CreateTab("Misc", 4483362458)
-
 local autoRepair=false
 local isRepairing=false
 local RepairEvent
 if ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("Generator") and ReplicatedStorage.Remotes.Generator:FindFirstChild("RepairEvent") then
     RepairEvent = ReplicatedStorage.Remotes.Generator.RepairEvent
 end
-
 MainTab:CreateToggle({Name="Auto Generators", CurrentValue=false, Flag="AutoRepair", Callback=function(v) autoRepair=v end})
-
 local function tpTo(part) if hrp and part then pcall(function() hrp.CFrame=part.CFrame end) end end
-
 local function teleportToLobbyModel()
     local lobby = workspace:FindFirstChild("Lobby")
     if not lobby then return false end
@@ -39,7 +33,6 @@ local function teleportToLobbyModel()
     if hrp then pcall(function() hrp.CFrame = partToUse.CFrame + Vector3.new(0,5,0) end) end
     return true
 end
-
 local function repairMachine(part)
     if part and part:IsA("BasePart") and RepairEvent then
         tpTo(part)
@@ -70,7 +63,6 @@ local function repairMachine(part)
         isRepairing=false
     end
 end
-
 task.spawn(function()
     while task.wait(1) do
         if autoRepair and RepairEvent then
@@ -84,7 +76,6 @@ task.spawn(function()
         else isRepairing=false end
     end
 end)
-
 local noclipEnabled=false
 local savedCollision={}
 local function saveAndSetCollide(v)
@@ -100,15 +91,12 @@ local function saveAndSetCollide(v)
         end
     end
 end
-
 MainTab:CreateToggle({Name="Noclip", CurrentValue=false, Flag="Noclip", Callback=function(v)
     noclipEnabled=v
     if not noclipEnabled then saveAndSetCollide(true) end
 end})
-
 RunService.Stepped:Connect(function() if noclipEnabled then saveAndSetCollide(false) end end)
 player.CharacterAdded:Connect(function(nc) char=nc hrp=char:WaitForChild("HumanoidRootPart") if not noclipEnabled then saveAndSetCollide(true) end end)
-
 local autoWin=false
 MainTab:CreateToggle({Name="Auto Win", CurrentValue=false, Flag="AutoWin", Callback=function(v) autoWin=v end})
 task.spawn(function()
@@ -121,22 +109,18 @@ task.spawn(function()
         end
     end
 end)
-
 local espEnabled=false
 local espTexts={}
 MiscTab:CreateToggle({Name="ESP Killer", CurrentValue=false, Flag="ESPWeaponPlayers", Callback=function(v)
     espEnabled=v
     for _,t in pairs(espTexts) do pcall(function() t.Visible=false end) end
 end})
-
 local function createText() local t=Drawing.new("Text") t.Size=18 t.Center=true t.Outline=true t.OutlineColor=Color3.new(0,0,0) t.Color=Color3.fromRGB(255,0,0) t.Visible=false t.Font=2 return t end
 local function ensureESP(p) if espTexts[p] then return end espTexts[p]=createText() end
 local function removeESP(p) if espTexts[p] then pcall(function() espTexts[p]:Remove() end) espTexts[p]=nil end end
-
 for _,p in ipairs(Players:GetPlayers()) do if p~=player then if p.Character then ensureESP(p) end p.CharacterAdded:Connect(function() ensureESP(p) end) end end
 Players.PlayerAdded:Connect(function(p) if p~=player then p.CharacterAdded:Connect(function() ensureESP(p) end) end end)
 Players.PlayerRemoving:Connect(removeESP)
-
 local function characterHasWeapon(ch)
     if not ch then return false end
     if ch:FindFirstChild("Weapon") then return true end
@@ -144,7 +128,6 @@ local function characterHasWeapon(ch)
     if ch:FindFirstChild("Weapon",true) then return true end
     return false
 end
-
 RunService.RenderStepped:Connect(function()
     if not espEnabled then return end
     if not hrp or not hrp.Parent then hrp=player.Character and player.Character:FindFirstChild("HumanoidRootPart") if not hrp then return end end
@@ -165,59 +148,74 @@ RunService.RenderStepped:Connect(function()
         end
     end
 end)
-
-local flySpeed=50
-local flying=false
-local flyDir=Vector3.new()
-local bodyVelocity
-local isMobile=uis.TouchEnabled and not uis.KeyboardEnabled
-local mobileUp,mobileDown=false,false
-
-MiscTab:CreateToggle({Name="Fly", CurrentValue=false, Flag="FlyToggle", Callback=function(v)
-    flying=v
-    if flying and hrp then
-        bodyVelocity=Instance.new("BodyVelocity")
-        bodyVelocity.MaxForce=Vector3.new(1e5,1e5,1e5)
-        bodyVelocity.Velocity=Vector3.new(0,0,0)
-        bodyVelocity.Parent=hrp
-    else
-        if bodyVelocity then bodyVelocity:Destroy() bodyVelocity=nil end
-    end
-end})
-
-if isMobile then
-    uis.TouchStarted:Connect(function(inp)
-        if inp.UserInputType==Enum.UserInputType.Touch then
-            if inp.Position.Y<workspace.CurrentCamera.ViewportSize.Y/2 then mobileUp=true else mobileDown=true end
+local flySpeed = 100
+local flying = false
+local flycontrol = {F = 0, B = 0, R = 0, L = 0, U = 0, D = 0}
+local bv, bg
+local humanoid
+local function startFly()
+    if flying then return end
+    if not char or not hrp then return end
+    humanoid = char:FindFirstChildWhichIsA("Humanoid")
+    if not humanoid then return end
+    flying = true
+    bv = Instance.new("BodyVelocity")
+    bg = Instance.new("BodyGyro")
+    bv.MaxForce = Vector3.new(9e4, 9e4, 9e4)
+    bg.MaxTorque = Vector3.new(9e4, 9e4, 9e4)
+    bg.P = 9e4
+    bv.Velocity = Vector3.zero
+    bg.CFrame = hrp.CFrame
+    bv.Parent = hrp
+    bg.Parent = hrp
+    for _, part in pairs(char:GetDescendants()) do
+        if part:IsA("BasePart") then
+            task.spawn(function()
+                local con
+                con = RunService.Stepped:Connect(function()
+                    if not flying then con:Disconnect() part.CanCollide = true return end
+                    part.CanCollide = false
+                end)
+            end)
         end
+    end
+    task.spawn(function()
+        while flying and bv and bg do
+            humanoid.PlatformStand = true
+            local cam = workspace.CurrentCamera
+            local look = cam.CFrame.LookVector
+            local right = cam.CFrame.RightVector
+            local up = cam.CFrame.UpVector
+            local moveDir = (look * (flycontrol.F - flycontrol.B) + right * (flycontrol.R - flycontrol.L) + up * (flycontrol.U - flycontrol.D)) * flySpeed
+            bv.Velocity = moveDir
+            bg.CFrame = cam.CFrame
+            task.wait()
+        end
+        if bv then bv:Destroy() end
+        if bg then bg:Destroy() end
+        if humanoid then humanoid.PlatformStand = false end
     end)
-    uis.TouchEnded:Connect(function(inp) if inp.UserInputType==Enum.UserInputType.Touch then mobileUp=false mobileDown=false end end)
 end
-
-RunService.RenderStepped:Connect(function()
-    if flying and bodyVelocity and hrp then
-        local cam=workspace.CurrentCamera.CFrame
-        flyDir=Vector3.new(0,0,0)
-        if not isMobile then
-            if uis:IsKeyDown(Enum.KeyCode.W) then flyDir+=cam.LookVector end
-            if uis:IsKeyDown(Enum.KeyCode.S) then flyDir-=cam.LookVector end
-            if uis:IsKeyDown(Enum.KeyCode.A) then flyDir-=cam.RightVector end
-            if uis:IsKeyDown(Enum.KeyCode.D) then flyDir+=cam.RightVector end
-            if uis:IsKeyDown(Enum.KeyCode.Space) then flyDir+=Vector3.new(0,1,0) end
-            if uis:IsKeyDown(Enum.KeyCode.LeftControl) then flyDir-=Vector3.new(0,1,0) end
-        else
-            if mobileUp then flyDir+=Vector3.new(0,1,0) end
-            if mobileDown then flyDir-=Vector3.new(0,1,0) end
-            if uis:IsTouching() then flyDir+=cam.LookVector end
-        end
-        if flyDir.Magnitude~=0 then flyDir=flyDir.Unit*flySpeed end
-        bodyVelocity.Velocity=flyDir
-    end
+local function stopFly() flying = false end
+uis.InputBegan:Connect(function(input, gp)
+    if gp then return end
+    local key = input.KeyCode
+    if key == Enum.KeyCode.W then flycontrol.F = 1 end
+    if key == Enum.KeyCode.S then flycontrol.B = 1 end
+    if key == Enum.KeyCode.D then flycontrol.R = 1 end
+    if key == Enum.KeyCode.A then flycontrol.L = 1 end
+    if key == Enum.KeyCode.Space then flycontrol.U = 1 end
+    if key == Enum.KeyCode.Q then flycontrol.D = 1 end
 end)
-
-player.CharacterAdded:Connect(function(nc)
-    char=nc
-    hrp=char:WaitForChild("HumanoidRootPart")
-    if flying and bodyVelocity then bodyVelocity.Parent=hrp end
-    if not noclipEnabled then saveAndSetCollide(true) end
+uis.InputEnded:Connect(function(input)
+    local key = input.KeyCode
+    if key == Enum.KeyCode.W then flycontrol.F = 0 end
+    if key == Enum.KeyCode.S then flycontrol.B = 0 end
+    if key == Enum.KeyCode.D then flycontrol.R = 0 end
+    if key == Enum.KeyCode.A then flycontrol.L = 0 end
+    if key == Enum.KeyCode.Space then flycontrol.U = 0 end
+    if key == Enum.KeyCode.Q then flycontrol.D = 0 end
 end)
+MiscTab:CreateToggle({Name = "Fly", CurrentValue = false, Flag = "FlyToggle", Callback = function(v) if v then startFly() else stopFly() end end})
+MiscTab:CreateSlider({Name = "Fly Speed", Range = {10, 500}, Increment = 10, Suffix = "Speed", CurrentValue = flySpeed, Flag = "FlySpeed", Callback = function(v) flySpeed = v end})
+player.CharacterAdded:Connect(function(newChar) char = newChar hrp = char:WaitForChild("HumanoidRootPart") flying = false end)
