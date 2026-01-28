@@ -229,7 +229,7 @@ local QuestRoot = workspace.Ignore.Characters.NPCs.FriendlyNPCs.Interaction.Ques
 
 local function GetQuestNPC()
     local lv = GetLevel()
-    if lv < 100 then return QuestRoot["Noob 1-100"]
+    if lv < 100 then return QuestRoot["Noob"]
     elseif lv < 200 then return QuestRoot["unicornqueen4ever23"]
     elseif lv < 300 then return QuestRoot["DanniBro092"]
     elseif lv < 450 then return QuestRoot["Mixyyq0"]
