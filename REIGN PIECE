@@ -1,0 +1,371 @@
+
+local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
+local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
+
+local Runtime = {
+    AutoFarm = false,
+    AutoEquip = false,
+    AttackDelay = 0.1,
+    SafeY = 10,
+    Weapon = nil,
+    AutoStat = false,
+    StatDelay = 0.1,
+    StatName = nil
+}
+
+local Players = game:GetService("Players")
+local RS = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local VIM = game:GetService("VirtualInputManager")
+local LP = Players.LocalPlayer
+
+local function Char()
+    return LP.Character or LP.CharacterAdded:Wait()
+end
+
+local function HRP()
+    return Char():WaitForChild("HumanoidRootPart")
+end
+
+local function GetLevel()
+    return workspace._DataMirror[LP.Name].Information.Level.Value
+end
+
+local function GetWeaponList()
+    local weapons = {}
+    for _,v in ipairs(LP.Backpack:GetChildren()) do
+        if v:IsA("Tool") then
+            table.insert(weapons, v.Name)
+        end
+    end
+    return weapons
+end
+
+local function EquipWeapon()
+    if not Runtime.Weapon then return end
+    local tool = LP.Backpack:FindFirstChild(Runtime.Weapon)
+    if tool then
+        tool.Parent = Char()
+    end
+end
+
+task.spawn(function()
+    while task.wait(0.1) do
+        if Runtime.AutoEquip then
+            EquipWeapon()
+        end
+    end
+end)
+
+local function GetStatList()
+    local stats = {}
+    local mirror = workspace:FindFirstChild("_DataMirror")
+    if not mirror then return stats end
+    
+    local data = mirror:FindFirstChild(LP.Name)
+    if not data then return stats end
+    
+    local statsFolder = data:FindFirstChild("Stats")
+    if not statsFolder then return stats end
+    
+    for _,v in ipairs(statsFolder:GetChildren()) do
+        if v:IsA("IntValue") or v:IsA("NumberValue") then
+            table.insert(stats, v.Name)
+        end
+    end
+    
+    return stats
+end
+
+local function GetFirstStat()
+    local stats = GetStatList()
+    if #stats > 0 then
+        return stats[1]
+    end
+    return nil
+end
+
+if not Runtime.StatName then
+    Runtime.StatName = GetFirstStat()
+end
+
+task.spawn(function()
+    while task.wait(0.1) do
+        if not Runtime.AutoStat or not Runtime.StatName then continue end
+
+        local mirror = workspace:FindFirstChild("_DataMirror")
+        if not mirror then continue end
+
+        local data = mirror:FindFirstChild(LP.Name)
+        if not data then continue end
+
+        local info = data:FindFirstChild("Information")
+        local stats = data:FindFirstChild("Stats")
+        if not info or not stats then continue end
+
+        local points = info:FindFirstChild("Statpoints")
+        local stat = stats:FindFirstChild(Runtime.StatName)
+        if not points or not stat then continue end
+        if points.Value <= 0 then continue end
+
+        RS.Remotes.Events.StatAction:FireServer(Runtime.StatName, 1)
+        task.wait(Runtime.StatDelay)
+    end
+end)
+
+local LockConn
+local function LockOnMob(mob)
+    if LockConn then LockConn:Disconnect() end
+    LockConn = RunService.Heartbeat:Connect(function()
+        if not Runtime.AutoFarm
+        or not mob
+        or not mob.Parent
+        or mob.Humanoid.Health <= 0 then
+            if LockConn then
+                LockConn:Disconnect()
+                LockConn = nil
+            end
+            return
+        end
+
+        local pos = mob.HumanoidRootPart.Position + Vector3.new(0, Runtime.SafeY, 0)
+        HRP().CFrame = CFrame.lookAt(pos, mob.HumanoidRootPart.Position)
+        HRP().AssemblyLinearVelocity = Vector3.zero
+        HRP().AssemblyAngularVelocity = Vector3.zero
+    end)
+end
+
+local Data = workspace._DataMirror[LP.Name]
+local ActiveQuest = Data.Quests.Active
+
+local function HasQuest()
+    return #ActiveQuest:GetChildren() > 0
+end
+
+local function GetQuestMobName()
+    for _,q in ipairs(ActiveQuest:GetChildren()) do
+        return q.Name
+    end
+end
+
+local QuestRoot = workspace.Ignore.Characters.NPCs.FriendlyNPCs.Interaction.Quest
+
+local function GetQuestNPC()
+    local lv = GetLevel()
+    if lv < 100 then return QuestRoot["Noob 1-100"]
+    elseif lv < 200 then return QuestRoot["unicornqueen4ever23"]
+    elseif lv < 300 then return QuestRoot["DanniBro092"]
+    elseif lv < 450 then return QuestRoot["Mixyyq0"]
+    elseif lv < 600 then return QuestRoot["MarkernYT4"]
+    elseif lv < 750 then return QuestRoot["fachero_poto"]
+    elseif lv < 1000 then return QuestRoot["DFocusD"]
+    elseif lv < 1250 then return QuestRoot["Uperscuzzi"]
+    elseif lv < 1500 then return QuestRoot["ElNightts"]
+    elseif lv < 1750 then return QuestRoot["Quest 1"]
+    elseif lv < 2000 then return QuestRoot["Quest 2"]
+    elseif lv <= 2500 then return QuestRoot["cruzXyeti"]
+    end
+end
+
+local function TakeQuest()
+    local npc = GetQuestNPC()
+    if not npc then return end
+    HRP().CFrame = npc.HumanoidRootPart.CFrame * CFrame.new(0,0,3)
+    task.wait(0.3)
+    VIM:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+    task.wait(0.1)
+    VIM:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+    task.wait(1)
+end
+
+local EnemyFolder = workspace.Ignore.Characters.NPCs.EnemyNPCs
+
+local function GetQuestMob()
+    local name = GetQuestMobName()
+    if not name then return end
+    for _,mob in ipairs(EnemyFolder:GetChildren()) do
+        if mob.Name == name
+        and mob:FindFirstChild("HumanoidRootPart")
+        and mob.Humanoid.Health > 0 then
+            return mob
+        end
+    end
+end
+
+local M1 = RS.Remotes.Events.M1
+local function Attack()
+    M1:FireServer("Action",1)
+end
+
+task.spawn(function()
+    while task.wait(0.1) do
+        if not Runtime.AutoFarm then continue end
+
+        if not HasQuest() then
+            TakeQuest()
+            continue
+        end
+
+        local mob = GetQuestMob()
+        if not mob then
+            TakeQuest()
+            task.wait(1)
+            continue
+        end
+
+        LockOnMob(mob)
+        while Runtime.AutoFarm
+        and mob.Parent
+        and mob.Humanoid.Health > 0 do
+            Attack()
+            task.wait(Runtime.AttackDelay)
+        end
+    end
+end)
+
+local Window = Fluent:CreateWindow({
+    Title = "[ RE-RELEASE + TENGEN 🎇🎉 ] REIGN PIECE",
+    SubTitle = "By Sondubai",
+    TabWidth = 160,
+    Size = UDim2.fromOffset(560, 440),
+    Acrylic = true,
+    Theme = "Dark",
+    MinimizeKey = Enum.KeyCode.LeftControl
+})
+
+local Tabs = {
+    Main = Window:AddTab({ Title = "Main" }),
+    Weapon = Window:AddTab({ Title = "Weapon" }),
+    Stats = Window:AddTab({ Title = "Stats" }),
+    Settings = Window:AddTab({ Title = "Settings" })
+}
+
+Tabs.Main:AddToggle("AF", {
+    Title = "Auto Farm",
+    Description = "Automatically farm quests"
+}):OnChanged(function(v)
+    Runtime.AutoFarm = v
+end)
+
+Tabs.Main:AddSlider("AD", {
+    Title = "Attack Delay",
+    Description = "",
+    Default = 0.1,
+    Min = 0,
+    Max = 1,
+    Rounding = 2,
+    Callback = function(v)
+        Runtime.AttackDelay = v
+    end
+})
+
+Tabs.Main:AddSlider("SY", {
+    Title = "Distance",
+    Description = "Farm distance",
+    Default = 10,
+    Min = 0,
+    Max = 15,
+    Rounding = 1,
+    Callback = function(v)
+        Runtime.SafeY = v
+    end
+})
+
+Tabs.Weapon:AddToggle("AE", {
+    Title = "Auto Equip",
+    Description = "Automatically equip weapon"
+}):OnChanged(function(v)
+    Runtime.AutoEquip = v
+end)
+
+local weaponList = GetWeaponList()
+if #weaponList == 0 then
+    weaponList = {"No Weapons"}
+end
+
+local WeaponDropdown = Tabs.Weapon:AddDropdown("WD", {
+    Title = "Weapon",
+    Values = weaponList
+}):OnChanged(function(v)
+    if v ~= "No Weapons" then
+        Runtime.Weapon = v
+    end
+end)
+
+Tabs.Weapon:AddButton({
+    Title = "Refresh Weapon",
+    Description = "Update weapon list",
+    Callback = function()
+        local newWeaponList = GetWeaponList()
+        if #newWeaponList == 0 then
+            newWeaponList = {"No Weapons"}
+        end
+        if WeaponDropdown then
+            WeaponDropdown:SetValues(newWeaponList)
+        end
+    end
+})
+
+Tabs.Stats:AddToggle("AS", {
+    Title = "Auto Stat",
+    Description = "Automatically add points to stats"
+}):OnChanged(function(v)
+    Runtime.AutoStat = v
+end)
+
+Tabs.Stats:AddSlider("SD", {
+    Title = "Stat Delay",
+    Description = "",
+    Default = 0.1,
+    Min = 0,
+    Max = 2,
+    Rounding = 2,
+    Callback = function(v)
+        Runtime.StatDelay = v
+    end
+})
+
+local statList = GetStatList()
+if #statList == 0 then
+    statList = {"No Stats"}
+end
+
+local StatDropdown = Tabs.Stats:AddDropdown("SD2", {
+    Title = "Stat Name",
+    Description = "Choose one stat to improve",
+    Values = statList
+}):OnChanged(function(v)
+    if v ~= "No Stats" then
+        Runtime.StatName = v
+    end
+end)
+
+Tabs.Stats:AddButton({
+    Title = "Refresh Stats",
+    Description = "Update stats list",
+    Callback = function()
+        local newStatList = GetStatList()
+        if #newStatList == 0 then
+            newStatList = {"No Stats"}
+        end
+        if StatDropdown then
+            StatDropdown:SetValues(newStatList)
+        end
+    end
+})
+
+SaveManager:SetLibrary(Fluent)
+InterfaceManager:SetLibrary(Fluent)
+InterfaceManager:SetFolder("AutoScript")
+SaveManager:SetFolder("AutoScript/configs")
+InterfaceManager:BuildInterfaceSection(Tabs.Settings)
+SaveManager:BuildConfigSection(Tabs.Settings)
+
+Fluent:Notify({
+    Title = "",
+    Content = "Script Loaded Successfully",
+    Duration = 5
+})
+
+SaveManager:LoadAutoloadConfig()
