@@ -7,11 +7,12 @@ local Runtime = {
     AutoFarm = false,
     AutoEquip = false,
     AttackDelay = 0.1,
-    SafeY = 10,
+    Distance = 10,
     Weapon = nil,
     AutoStat = false,
     StatDelay = 0.1,
-    StatName = nil
+    StatName = nil,
+    BringMob = false
 }
 
 local Players = game:GetService("Players")
@@ -136,6 +137,25 @@ local function LockOnMob(mob)
     end)
 end
 
+local function LockOnFirstMobWithSafeY(firstMob)
+    if LockConn then LockConn:Disconnect() end
+    LockConn = RunService.Heartbeat:Connect(function()
+        if not Runtime.AutoFarm or not Runtime.BringMob or not firstMob or not firstMob.Parent or firstMob.Humanoid.Health <= 0 then
+            if LockConn then
+                LockConn:Disconnect()
+                LockConn = nil
+            end
+            return
+        end
+
+        local mobPos = firstMob.HumanoidRootPart.Position
+        local pos = mobPos + Vector3.new(0, Runtime.SafeY, 0)
+        HRP().CFrame = CFrame.lookAt(pos, mobPos)
+        HRP().AssemblyLinearVelocity = Vector3.zero
+        HRP().AssemblyAngularVelocity = Vector3.zero
+    end)
+end
+
 local Data = workspace._DataMirror[LP.Name]
 local ActiveQuest = Data.Quests.Active
 
@@ -146,6 +166,62 @@ end
 local function GetQuestMobName()
     for _,q in ipairs(ActiveQuest:GetChildren()) do
         return q.Name
+    end
+end
+
+local EnemyFolder = workspace.Ignore.Characters.NPCs.EnemyNPCs
+
+local function GetFirstQuestMob()
+    local name = GetQuestMobName()
+    if not name then return nil end
+    for _,mob in ipairs(EnemyFolder:GetChildren()) do
+        if mob.Name == name
+        and mob:FindFirstChild("HumanoidRootPart")
+        and mob:FindFirstChild("Humanoid")
+        and mob.Humanoid.Health > 0 then
+            return mob
+        end
+    end
+    return nil
+end
+
+local function GetAllQuestMobs()
+    local mobs = {}
+    local name = GetQuestMobName()
+    if not name then return mobs end
+    
+    for _,mob in ipairs(EnemyFolder:GetChildren()) do
+        if mob.Name == name
+        and mob:FindFirstChild("HumanoidRootPart")
+        and mob:FindFirstChild("Humanoid")
+        and mob.Humanoid.Health > 0 then
+            table.insert(mobs, mob)
+        end
+    end
+    return mobs
+end
+
+local function BringAllMobsToFirstMob()
+    if not Runtime.AutoFarm or not Runtime.BringMob then return end
+    
+    local questMobName = GetQuestMobName()
+    if not questMobName then return end
+    
+    local firstMob = GetFirstQuestMob()
+    if not firstMob then return end
+    
+    local targetPos = firstMob.HumanoidRootPart.Position
+    
+    for _,mob in ipairs(EnemyFolder:GetChildren()) do
+        if mob.Name == questMobName 
+        and mob:FindFirstChild("HumanoidRootPart") 
+        and mob:FindFirstChild("Humanoid") 
+        and mob.Humanoid.Health > 0 then
+            local mobHRP = mob.HumanoidRootPart
+            mobHRP.CFrame = CFrame.new(targetPos)
+            mobHRP.AssemblyLinearVelocity = Vector3.zero
+            mobHRP.AssemblyAngularVelocity = Vector3.zero
+        end
     end
 end
 
@@ -179,8 +255,6 @@ local function TakeQuest()
     task.wait(1)
 end
 
-local EnemyFolder = workspace.Ignore.Characters.NPCs.EnemyNPCs
-
 local function GetQuestMob()
     local name = GetQuestMobName()
     if not name then return end
@@ -198,28 +272,63 @@ local function Attack()
     M1:FireServer("Action",1)
 end
 
+local function AttackAllMobs()
+    if not Runtime.BringMob then return end
+    
+    local allMobs = GetAllQuestMobs()
+    if #allMobs == 0 then return end
+    
+    for _,mob in ipairs(allMobs) do
+        if mob and mob.Parent and mob.Humanoid.Health > 0 then
+            M1:FireServer("Action", 1)
+            task.wait(0.02)
+        end
+    end
+end
+
+task.spawn(function()
+    while task.wait(0.05) do
+        BringAllMobsToFirstMob()
+    end
+end)
+
 task.spawn(function()
     while task.wait(0.1) do
         if not Runtime.AutoFarm then continue end
 
         if not HasQuest() then
             TakeQuest()
+            task.wait(1)
             continue
         end
 
         local mob = GetQuestMob()
         if not mob then
-            TakeQuest()
-            task.wait(1)
+            task.wait(0.5)
             continue
         end
 
-        LockOnMob(mob)
-        while Runtime.AutoFarm
-        and mob.Parent
-        and mob.Humanoid.Health > 0 do
-            Attack()
-            task.wait(Runtime.AttackDelay)
+        if Runtime.BringMob then
+            LockOnFirstMobWithSafeY(mob)
+            while Runtime.AutoFarm
+            and Runtime.BringMob do
+                local currentMob = GetQuestMob()
+                if not currentMob or not currentMob.Parent or currentMob.Humanoid.Health <= 0 then
+                    break
+                end
+                AttackAllMobs()
+                task.wait(Runtime.AttackDelay)
+            end
+        else
+            LockOnMob(mob)
+            while Runtime.AutoFarm
+            and not Runtime.BringMob do
+                if not mob or not mob.Parent or mob.Humanoid.Health <= 0 then
+                    break
+                end
+                Attack()
+                task.wait(Runtime.AttackDelay)
+            end
         end
     end
 end)
@@ -243,9 +352,16 @@ local Tabs = {
 
 Tabs.Main:AddToggle("AF", {
     Title = "Auto Farm",
-    Description = "Automatically farm quests"
+    Description = "Automatically Farm Level"
 }):OnChanged(function(v)
     Runtime.AutoFarm = v
+end)
+
+Tabs.Main:AddToggle("BM", {
+    Title = "Bring Mobs",
+    Description = ""
+}):OnChanged(function(v)
+    Runtime.BringMob = v
 end)
 
 Tabs.Main:AddSlider("AD", {
@@ -265,7 +381,7 @@ Tabs.Main:AddSlider("SY", {
     Description = "Farm distance",
     Default = 10,
     Min = 0,
-    Max = 15,
+    Max = 50,
     Rounding = 1,
     Callback = function(v)
         Runtime.SafeY = v
@@ -295,7 +411,6 @@ end)
 
 Tabs.Weapon:AddButton({
     Title = "Refresh Weapon",
-    Description = "Update weapon list",
     Callback = function()
         local newWeaponList = GetWeaponList()
         if #newWeaponList == 0 then
@@ -316,7 +431,6 @@ end)
 
 Tabs.Stats:AddSlider("SD", {
     Title = "Stat Delay",
-    Description = "",
     Default = 0.1,
     Min = 0,
     Max = 2,
@@ -333,7 +447,6 @@ end
 
 local StatDropdown = Tabs.Stats:AddDropdown("SD2", {
     Title = "Stat Name",
-    Description = "Choose one stat to improve",
     Values = statList
 }):OnChanged(function(v)
     if v ~= "No Stats" then
@@ -349,7 +462,7 @@ InterfaceManager:BuildInterfaceSection(Tabs.Settings)
 SaveManager:BuildConfigSection(Tabs.Settings)
 
 Fluent:Notify({
-    Title = "",
+    Title = "Successfully",
     Content = "Script Loaded Successfully",
     Duration = 5
 })
