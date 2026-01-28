@@ -390,7 +390,7 @@ Tabs.Main:AddSlider("SY", {
 
 Tabs.Weapon:AddToggle("AE", {
     Title = "Auto Equip",
-    Description = "Automatically equip weapon"
+    Description = "Automatically Equip Weapon"
 }):OnChanged(function(v)
     Runtime.AutoEquip = v
 end)
@@ -424,7 +424,7 @@ Tabs.Weapon:AddButton({
 
 Tabs.Stats:AddToggle("AS", {
     Title = "Auto Stat",
-    Description = "Automatically add points to stats"
+    Description = "Automatically Add Points To Stats"
 }):OnChanged(function(v)
     Runtime.AutoStat = v
 end)
