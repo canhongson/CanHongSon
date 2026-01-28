@@ -341,20 +341,6 @@ local StatDropdown = Tabs.Stats:AddDropdown("SD2", {
     end
 end)
 
-Tabs.Stats:AddButton({
-    Title = "Refresh Stats",
-    Description = "Update stats list",
-    Callback = function()
-        local newStatList = GetStatList()
-        if #newStatList == 0 then
-            newStatList = {"No Stats"}
-        end
-        if StatDropdown then
-            StatDropdown:SetValues(newStatList)
-        end
-    end
-})
-
 SaveManager:SetLibrary(Fluent)
 InterfaceManager:SetLibrary(Fluent)
 InterfaceManager:SetFolder("AutoScript")
