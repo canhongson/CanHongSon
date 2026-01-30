@@ -2,6 +2,50 @@ local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/
 local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
 local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
 
+local Window = Fluent:CreateWindow({
+    Title = "[ RE-RELEASE + TENGEN 🎇🎉 ] REIGN PIECE",
+    SubTitle = "By Sondubai",
+    TabWidth = 160,
+    Size = UDim2.fromOffset(580, 460),
+    Acrylic = false,
+    Theme = "Dark",
+    MinimizeKey = Enum.KeyCode.LeftControl
+})
+
+local Tabs = {
+    Main = Window:AddTab({ Title = "Main", Icon = "home" }),
+    FarmBoss = Window:AddTab({ Title = "Farm Boss", Icon = "sword" }),
+    Weapon = Window:AddTab({ Title = "Weapon", Icon = "shield" }),
+    Stats = Window:AddTab({ Title = "Stats", Icon = "bar-chart-2" }),
+    Teleport = Window:AddTab({ Title = "Teleport", Icon = "map" }),
+    Settings = Window:AddTab({ Title = "Settings", Icon = "settings" })
+}
+
+local function AddBigTitle(Tab, Text)
+    local Container = Tab:AddSection(" ")
+    if Container and Container.Container then
+        local BigLabel = Instance.new("TextLabel")
+        BigLabel.Name = "BigTitle"
+        BigLabel.Size = UDim2.new(1, 0, 0, 14)
+        BigLabel.BackgroundTransparency = 1
+        BigLabel.Text = Text
+        BigLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        BigLabel.TextSize = 24
+        BigLabel.Font = Enum.Font.GothamBold
+        BigLabel.TextXAlignment = Enum.TextXAlignment.Left
+        BigLabel.TextYAlignment = Enum.TextYAlignment.Center
+        BigLabel.Parent = Container.Container
+    else
+        Tab:AddParagraph({ Title = ">>> " .. Text .. " <<<", Content = "" })
+    end
+end
+
+local Players = game:GetService("Players")
+local RS = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local VIM = game:GetService("VirtualInputManager")
+local LP = Players.LocalPlayer
+
 local Runtime = {
     AutoFarm = false,
     AutoEquip = false,
@@ -11,32 +55,42 @@ local Runtime = {
     AutoStat = false,
     StatDelay = 0.1,
     StatName = nil,
-    BringMob = false
+    BringMob = false,
+    AutoFarmBoss = false,
+    SelectedBoss = nil,
+    AutoFarmAllBoss = false,
+    AutoFarmSpawnBoss = false,
+    SelectedSpawnBoss = nil,
+    SelectedTeleportNPC = nil,
+    SelectedTeleportIsland = nil
 }
-
-local Players = game:GetService("Players")
-local RS = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
-local VIM = game:GetService("VirtualInputManager")
-local LP = Players.LocalPlayer
 
 local function Char()
     return LP.Character or LP.CharacterAdded:Wait()
 end
 
 local function HRP()
-    return Char():WaitForChild("HumanoidRootPart")
+    local char = Char()
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return char:WaitForChild("HumanoidRootPart") end
+    return hrp
 end
 
 local function GetLevel()
-    return workspace._DataMirror[LP.Name].Information.Level.Value
+    local mirror = workspace:FindFirstChild("_DataMirror")
+    if mirror and mirror:FindFirstChild(LP.Name) and mirror[LP.Name]:FindFirstChild("Information") then
+        return mirror[LP.Name].Information.Level.Value
+    end
+    return 0
 end
 
 local function GetWeaponList()
     local weapons = {}
-    for _,v in ipairs(LP.Backpack:GetChildren()) do
-        if v:IsA("Tool") then
-            table.insert(weapons, v.Name)
+    if LP.Backpack then
+        for _,v in ipairs(LP.Backpack:GetChildren()) do
+            if v:IsA("Tool") then
+                table.insert(weapons, v.Name)
+            end
         end
     end
     return weapons
@@ -44,9 +98,11 @@ end
 
 local function EquipWeapon()
     if not Runtime.Weapon then return end
+    local char = LP.Character
+    if not char then return end
     local tool = LP.Backpack:FindFirstChild(Runtime.Weapon)
     if tool then
-        tool.Parent = Char()
+        tool.Parent = char
     end
 end
 
@@ -76,15 +132,11 @@ end
 
 local function GetFirstStat()
     local stats = GetStatList()
-    if #stats > 0 then
-        return stats[1]
-    end
+    if #stats > 0 then return stats[1] end
     return nil
 end
 
-if not Runtime.StatName then
-    Runtime.StatName = GetFirstStat()
-end
+if not Runtime.StatName then Runtime.StatName = GetFirstStat() end
 
 task.spawn(function()
     while task.wait(0.1) do
@@ -100,7 +152,8 @@ task.spawn(function()
         local stat = stats:FindFirstChild(Runtime.StatName)
         if not points or not stat then continue end
         if points.Value <= 0 then continue end
-        RS.Remotes.Events.StatAction:FireServer(Runtime.StatName, 1)
+        
+        pcall(function() RS.Remotes.Events.StatAction:FireServer(Runtime.StatName, 1) end)
         task.wait(Runtime.StatDelay)
     end
 end)
@@ -109,17 +162,11 @@ local LockConn
 local function LockOnMob(mob)
     if LockConn then LockConn:Disconnect() end
     LockConn = RunService.Heartbeat:Connect(function()
-        if not Runtime.AutoFarm
-        or not mob
-        or not mob.Parent
-        or mob.Humanoid.Health <= 0 then
-            if LockConn then
-                LockConn:Disconnect()
-                LockConn = nil
-            end
+        if not Runtime.AutoFarm or not mob or not mob.Parent or not mob:FindFirstChild("Humanoid") or mob.Humanoid.Health <= 0 then
+            if LockConn then LockConn:Disconnect() LockConn = nil end
             return
         end
-        local pos = mob.HumanoidRootPart.Position + Vector3.new(0, Runtime.SafeY, 0)
+        local pos = mob.HumanoidRootPart.Position + Vector3.new(0, Runtime.SafeY or 10, 0)
         HRP().CFrame = CFrame.lookAt(pos, mob.HumanoidRootPart.Position)
         HRP().AssemblyLinearVelocity = Vector3.zero
         HRP().AssemblyAngularVelocity = Vector3.zero
@@ -129,44 +176,41 @@ end
 local function LockOnFirstMobWithSafeY(firstMob)
     if LockConn then LockConn:Disconnect() end
     LockConn = RunService.Heartbeat:Connect(function()
-        if not Runtime.AutoFarm or not Runtime.BringMob or not firstMob or not firstMob.Parent or firstMob.Humanoid.Health <= 0 then
-            if LockConn then
-                LockConn:Disconnect()
-                LockConn = nil
-            end
+        if not Runtime.AutoFarm or not Runtime.BringMob or not firstMob or not firstMob.Parent or not firstMob:FindFirstChild("Humanoid") or firstMob.Humanoid.Health <= 0 then
+            if LockConn then LockConn:Disconnect() LockConn = nil end
             return
         end
         local mobPos = firstMob.HumanoidRootPart.Position
-        local pos = mobPos + Vector3.new(0, Runtime.SafeY, 0)
+        local pos = mobPos + Vector3.new(0, Runtime.SafeY or 10, 0)
         HRP().CFrame = CFrame.lookAt(pos, mobPos)
         HRP().AssemblyLinearVelocity = Vector3.zero
         HRP().AssemblyAngularVelocity = Vector3.zero
     end)
 end
 
-local Data = workspace._DataMirror[LP.Name]
-local ActiveQuest = Data.Quests.Active
+local Data = workspace:FindFirstChild("_DataMirror")
+if Data and Data:FindFirstChild(LP.Name) then Data = Data[LP.Name] else Data = nil end
+local ActiveQuest
+if Data and Data:FindFirstChild("Quests") then ActiveQuest = Data.Quests.Active else ActiveQuest = {GetChildren = function() return {} end} end
 
 local function HasQuest()
+    if not ActiveQuest then return false end
     return #ActiveQuest:GetChildren() > 0
 end
 
 local function GetQuestMobName()
-    for _,q in ipairs(ActiveQuest:GetChildren()) do
-        return q.Name
-    end
+    if not ActiveQuest then return nil end
+    for _,q in ipairs(ActiveQuest:GetChildren()) do return q.Name end
 end
 
-local EnemyFolder = workspace.Ignore.Characters.NPCs.EnemyNPCs
+local EnemyFolder = workspace:FindFirstChild("Ignore") and workspace.Ignore:FindFirstChild("Characters") and workspace.Ignore.Characters:FindFirstChild("NPCs") and workspace.Ignore.Characters.NPCs:FindFirstChild("EnemyNPCs")
+if not EnemyFolder then EnemyFolder = {GetChildren = function() return {} end} end
 
 local function GetFirstQuestMob()
     local name = GetQuestMobName()
     if not name then return nil end
     for _,mob in ipairs(EnemyFolder:GetChildren()) do
-        if mob.Name == name
-        and mob:FindFirstChild("HumanoidRootPart")
-        and mob:FindFirstChild("Humanoid")
-        and mob.Humanoid.Health > 0 then
+        if mob.Name == name and mob:FindFirstChild("HumanoidRootPart") and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
             return mob
         end
     end
@@ -177,10 +221,7 @@ local function GetAllQuestMobs()
     local name = GetQuestMobName()
     if not name then return mobs end
     for _,mob in ipairs(EnemyFolder:GetChildren()) do
-        if mob.Name == name
-        and mob:FindFirstChild("HumanoidRootPart")
-        and mob:FindFirstChild("Humanoid")
-        and mob.Humanoid.Health > 0 then
+        if mob.Name == name and mob:FindFirstChild("HumanoidRootPart") and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
             table.insert(mobs, mob)
         end
     end
@@ -195,10 +236,7 @@ local function BringAllMobsToFirstMob()
     if not firstMob then return end
     local targetPos = firstMob.HumanoidRootPart.Position
     for _,mob in ipairs(EnemyFolder:GetChildren()) do
-        if mob.Name == questMobName 
-        and mob:FindFirstChild("HumanoidRootPart") 
-        and mob:FindFirstChild("Humanoid") 
-        and mob.Humanoid.Health > 0 then
+        if mob.Name == questMobName and mob:FindFirstChild("HumanoidRootPart") and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
             local mobHRP = mob.HumanoidRootPart
             mobHRP.CFrame = CFrame.new(targetPos)
             mobHRP.AssemblyLinearVelocity = Vector3.zero
@@ -207,7 +245,8 @@ local function BringAllMobsToFirstMob()
     end
 end
 
-local QuestRoot = workspace.Ignore.Characters.NPCs.FriendlyNPCs.Interaction.Quest
+local QuestRoot = workspace:FindFirstChild("Ignore") and workspace.Ignore:FindFirstChild("Characters") and workspace.Ignore.Characters:FindFirstChild("NPCs") and workspace.Ignore.Characters.NPCs:FindFirstChild("FriendlyNPCs") and workspace.Ignore.Characters.NPCs.FriendlyNPCs:FindFirstChild("Interaction") and workspace.Ignore.Characters.NPCs.FriendlyNPCs.Interaction:FindFirstChild("Quest")
+if not QuestRoot then QuestRoot = {} end
 
 local function GetQuestNPC()
     local lv = GetLevel()
@@ -228,7 +267,7 @@ end
 
 local function TakeQuest()
     local npc = GetQuestNPC()
-    if not npc then return end
+    if not npc or not npc:FindFirstChild("HumanoidRootPart") then return end
     HRP().CFrame = npc.HumanoidRootPart.CFrame * CFrame.new(0,0,3)
     task.wait(0.3)
     VIM:SendKeyEvent(true, Enum.KeyCode.E, false, game)
@@ -241,17 +280,15 @@ local function GetQuestMob()
     local name = GetQuestMobName()
     if not name then return end
     for _,mob in ipairs(EnemyFolder:GetChildren()) do
-        if mob.Name == name
-        and mob:FindFirstChild("HumanoidRootPart")
-        and mob.Humanoid.Health > 0 then
+        if mob.Name == name and mob:FindFirstChild("HumanoidRootPart") and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
             return mob
         end
     end
 end
 
-local M1 = RS.Remotes.Events.M1
+local M1 = RS:FindFirstChild("Remotes") and RS.Remotes:FindFirstChild("Events") and RS.Remotes.Events:FindFirstChild("M1")
 local function Attack()
-    M1:FireServer("Action",1)
+    if M1 then pcall(function() M1:FireServer("Action",1) end) end
 end
 
 local function AttackAllMobs()
@@ -259,8 +296,8 @@ local function AttackAllMobs()
     local allMobs = GetAllQuestMobs()
     if #allMobs == 0 then return end
     for _,mob in ipairs(allMobs) do
-        if mob and mob.Parent and mob.Humanoid.Health > 0 then
-            M1:FireServer("Action", 1)
+        if mob and mob.Parent and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
+            if M1 then pcall(function() M1:FireServer("Action", 1) end) end
             task.wait(0.02)
         end
     end
@@ -270,7 +307,7 @@ local function TeleportToQuestNPC()
     local npc = GetQuestNPC()
     if npc and npc:FindFirstChild("HumanoidRootPart") then
         HRP().CFrame = npc.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
-        wait(0.3)
+        task.wait(0.3)
     end
 end
 
@@ -299,7 +336,7 @@ task.spawn(function()
             LockOnFirstMobWithSafeY(mob)
             while Runtime.AutoFarm and Runtime.BringMob do
                 local currentMob = GetQuestMob()
-                if not currentMob or not currentMob.Parent or currentMob.Humanoid.Health <= 0 then
+                if not currentMob or not currentMob.Parent or not currentMob:FindFirstChild("Humanoid") or currentMob.Humanoid.Health <= 0 then
                     break
                 end
                 AttackAllMobs()
@@ -308,7 +345,7 @@ task.spawn(function()
         else
             LockOnMob(mob)
             while Runtime.AutoFarm and not Runtime.BringMob do
-                if not mob or not mob.Parent or mob.Humanoid.Health <= 0 then
+                if not mob or not mob.Parent or not mob:FindFirstChild("Humanoid") or mob.Humanoid.Health <= 0 then
                     break
                 end
                 Attack()
@@ -318,131 +355,350 @@ task.spawn(function()
     end
 end)
 
-local Window = Fluent:CreateWindow({
-    Title = "[ RE-RELEASE + TENGEN 🎇🎉 ] REIGN PIECE",
-    SubTitle = "By Sondubai",
-    TabWidth = 160,
-    Size = UDim2.fromOffset(560, 440),
-    Acrylic = true,
-    Theme = "Dark",
-    MinimizeKey = Enum.KeyCode.LeftControl
-})
+local BossLockConn
+local function LockOnBoss(boss)
+    if BossLockConn then BossLockConn:Disconnect() end
+    BossLockConn = RunService.Heartbeat:Connect(function()
+        if not Runtime.AutoFarmBoss or not boss or not boss.Parent or not boss:FindFirstChild("Humanoid") or boss.Humanoid.Health <= 0 then
+            if BossLockConn then BossLockConn:Disconnect() BossLockConn = nil end
+            return
+        end
+        local pos = boss.HumanoidRootPart.Position + Vector3.new(0, Runtime.SafeY or 10, 0)
+        HRP().CFrame = CFrame.lookAt(pos, boss.HumanoidRootPart.Position)
+        HRP().AssemblyLinearVelocity = Vector3.zero
+        HRP().AssemblyAngularVelocity = Vector3.zero
+    end)
+end
 
-local Tabs = {
-    Main = Window:AddTab({ Title = "Main" }),
-    Weapon = Window:AddTab({ Title = "Weapon" }),
-    Stats = Window:AddTab({ Title = "Stats" }),
-    Settings = Window:AddTab({ Title = "Settings" })
-}
+task.spawn(function()
+    while task.wait(0.1) do
+        if not Runtime.AutoFarmBoss then continue end
+        if not Runtime.SelectedBoss then continue end
+        local boss = nil
+        for _, mob in ipairs(EnemyFolder:GetChildren()) do
+            if mob.Name == Runtime.SelectedBoss then boss = mob break end
+        end
+        if not boss then task.wait(1) continue end
 
-Tabs.Main:AddToggle("AF", {
+        LockOnBoss(boss)
+        while Runtime.AutoFarmBoss and boss and boss.Parent and boss:FindFirstChild("Humanoid") and boss.Humanoid.Health > 0 do
+            if Runtime.SelectedBoss ~= boss.Name then break end
+            if Runtime.AutoEquip then EquipWeapon() end
+            if M1 then pcall(function() M1:FireServer("Action", 1) end) end
+            task.wait(Runtime.AttackDelay)
+        end
+        if BossLockConn then BossLockConn:Disconnect() BossLockConn = nil end
+    end
+end)
+
+local AllBossLockConn
+local function LockOnAllBoss(boss)
+    if AllBossLockConn then AllBossLockConn:Disconnect() end
+    AllBossLockConn = RunService.Heartbeat:Connect(function()
+        if not Runtime.AutoFarmAllBoss or not boss or not boss.Parent or not boss:FindFirstChild("Humanoid") or boss.Humanoid.Health <= 0 then
+            if AllBossLockConn then AllBossLockConn:Disconnect() AllBossLockConn = nil end
+            return
+        end
+        local pos = boss.HumanoidRootPart.Position + Vector3.new(0, Runtime.SafeY or 10, 0)
+        HRP().CFrame = CFrame.lookAt(pos, boss.HumanoidRootPart.Position)
+        HRP().AssemblyLinearVelocity = Vector3.zero
+        HRP().AssemblyAngularVelocity = Vector3.zero
+    end)
+end
+
+task.spawn(function()
+    while task.wait(0.1) do
+        if not Runtime.AutoFarmAllBoss then continue end
+        local BossListValues = {"Fujitora", "Rayleigh", "Mihawk", "Shanks"}
+        for _, bossName in ipairs(BossListValues) do
+            if not Runtime.AutoFarmAllBoss then break end
+            local boss = nil
+            for _, mob in ipairs(EnemyFolder:GetChildren()) do
+                if mob.Name == bossName and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
+                    boss = mob break
+                end
+            end
+            if boss then
+                LockOnAllBoss(boss)
+                while Runtime.AutoFarmAllBoss and boss and boss.Parent and boss:FindFirstChild("Humanoid") and boss.Humanoid.Health > 0 do
+                    if Runtime.AutoEquip then EquipWeapon() end
+                    if M1 then pcall(function() M1:FireServer("Action", 1) end) end
+                    task.wait(Runtime.AttackDelay)
+                end
+                if AllBossLockConn then AllBossLockConn:Disconnect() AllBossLockConn = nil end
+            end
+        end
+        task.wait(1)
+    end
+end)
+
+local SpawnBossLockConn
+local function LockOnSpawnBoss(boss)
+    if SpawnBossLockConn then SpawnBossLockConn:Disconnect() end
+    SpawnBossLockConn = RunService.Heartbeat:Connect(function()
+        if not Runtime.AutoFarmSpawnBoss or not boss or not boss.Parent or not boss:FindFirstChild("Humanoid") or boss.Humanoid.Health <= 0 then
+            if SpawnBossLockConn then SpawnBossLockConn:Disconnect() SpawnBossLockConn = nil end
+            return
+        end
+        local pos = boss.HumanoidRootPart.Position + Vector3.new(0, Runtime.SafeY or 10, 0)
+        HRP().CFrame = CFrame.lookAt(pos, boss.HumanoidRootPart.Position)
+        HRP().AssemblyLinearVelocity = Vector3.zero
+        HRP().AssemblyAngularVelocity = Vector3.zero
+    end)
+end
+
+task.spawn(function()
+    while task.wait(0.1) do
+        if not Runtime.AutoFarmSpawnBoss then continue end
+        if not Runtime.SelectedSpawnBoss then continue end
+
+        local Transactions = workspace:FindFirstChild("Ignore") and workspace.Ignore:FindFirstChild("Characters") and workspace.Ignore.Characters:FindFirstChild("NPCs") and workspace.Ignore.Characters.NPCs:FindFirstChild("FriendlyNPCs") and workspace.Ignore.Characters.NPCs.FriendlyNPCs:FindFirstChild("Interaction") and workspace.Ignore.Characters.NPCs.FriendlyNPCs.Interaction:FindFirstChild("Transactions")
+        local SpawnNPC = nil
+        if Transactions then SpawnNPC = Transactions:FindFirstChild("Shock Ghost") end
+
+        if not SpawnNPC or not SpawnNPC:FindFirstChild("HumanoidRootPart") then
+            Fluent:Notify({ Title = "Error", Content = "Spawn NPC not found", Duration = 3 })
+            Runtime.AutoFarmSpawnBoss = false
+            continue
+        end
+
+        HRP().CFrame = SpawnNPC.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
+        task.wait(0.5)
+        VIM:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+        task.wait(0.1)
+        VIM:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+        task.wait(1)
+
+        local boss = nil
+        local maxWaitTime = 0.1
+        local waited = 0
+        while waited < maxWaitTime do
+            if not Runtime.AutoFarmSpawnBoss then break end
+            for _, mob in ipairs(EnemyFolder:GetChildren()) do
+                if mob.Name == Runtime.SelectedSpawnBoss and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
+                    boss = mob break
+                end
+            end
+            if boss then break end
+            task.wait(0.5)
+            waited = waited + 0.4
+        end
+
+        if boss then
+            LockOnSpawnBoss(boss)
+            while Runtime.AutoFarmSpawnBoss and boss and boss.Parent and boss:FindFirstChild("Humanoid") and boss.Humanoid.Health > 0 do
+                if Runtime.AutoEquip then EquipWeapon() end
+                if M1 then pcall(function() M1:FireServer("Action", 1) end) end
+                task.wait(Runtime.AttackDelay)
+            end
+            if SpawnBossLockConn then SpawnBossLockConn:Disconnect() SpawnBossLockConn = nil end
+        else
+        end
+        task.wait(0.1)
+    end
+end)
+
+Tabs.Main:AddToggle("Auto Farm", {
     Title = "Auto Farm",
     Description = "Automatically Farm Level"
-}):OnChanged(function(v)
-    Runtime.AutoFarm = v
-end)
+}):OnChanged(function(v) Runtime.AutoFarm = v end)
 
-Tabs.Main:AddToggle("BM", {
+Tabs.Main:AddToggle("Bring Mobs", {
     Title = "Bring Mobs",
     Description = ""
-}):OnChanged(function(v)
-    Runtime.BringMob = v
-end)
+}):OnChanged(function(v) Runtime.BringMob = v end)
 
-Tabs.Main:AddSlider("AD", {
+AddBigTitle(Tabs.Main, "Settings")
+Tabs.Main:AddSlider("Attack Delay", {
     Title = "Attack Delay",
-    Description = "",
+    Description = "Delay between attacks",
     Default = 0.1,
     Min = 0,
     Max = 1,
     Rounding = 2,
-    Callback = function(v)
-        Runtime.AttackDelay = v
-    end
+    Callback = function(v) Runtime.AttackDelay = v end
 })
 
-Tabs.Main:AddSlider("SY", {
+Tabs.Main:AddSlider("Distance", {
     Title = "Distance",
-    Description = "Farm distance",
+    Description = "Farm Distance",
     Default = 10,
     Min = 0,
     Max = 50,
     Rounding = 1,
-    Callback = function(v)
-        Runtime.SafeY = v
-    end
+    Callback = function(v) Runtime.SafeY = v end
 })
 
-Tabs.Weapon:AddToggle("AE", {
+Tabs.Weapon:AddToggle("Auto Equip", {
     Title = "Auto Equip",
     Description = "Automatically Equip Weapon"
-}):OnChanged(function(v)
-    Runtime.AutoEquip = v
-end)
+}):OnChanged(function(v) Runtime.AutoEquip = v end)
 
 local weaponList = GetWeaponList()
-if #weaponList == 0 then
-    weaponList = {"No Weapons"}
-end
+if #weaponList == 0 then weaponList = {"No Weapons"} end
 
-local WeaponDropdown = Tabs.Weapon:AddDropdown("WD", {
-    Title = "Weapon",
-    Values = weaponList
+local WeaponDropdown = Tabs.Weapon:AddDropdown("Weapon", {
+    Title = "Select Weapon",
+    Values = weaponList,
+    AllowNull = true
 }):OnChanged(function(v)
-    if v ~= "No Weapons" then
-        Runtime.Weapon = v
-    end
+    if v ~= "No Weapons" then Runtime.Weapon = v end
 end)
 
 Tabs.Weapon:AddButton({
-    Title = "Refresh Weapon",
+    Title = "Refresh Weapons",
     Callback = function()
         local newWeaponList = GetWeaponList()
-        if #newWeaponList == 0 then
-            newWeaponList = {"No Weapons"}
-        end
-        if WeaponDropdown then
-            WeaponDropdown:SetValues(newWeaponList)
-        end
+        if #newWeaponList == 0 then newWeaponList = {"No Weapons"} end
+        if WeaponDropdown then WeaponDropdown:SetValues(newWeaponList) end
     end
 })
 
-Tabs.Stats:AddToggle("AS", {
+Tabs.Stats:AddToggle("Auto Stat", {
     Title = "Auto Stat",
     Description = "Automatically Add Points To Stats"
-}):OnChanged(function(v)
-    Runtime.AutoStat = v
-end)
+}):OnChanged(function(v) Runtime.AutoStat = v end)
 
-Tabs.Stats:AddSlider("SD", {
+Tabs.Stats:AddSlider("Stat Delay", {
     Title = "Stat Delay",
     Default = 0.1,
     Min = 0,
     Max = 2,
     Rounding = 2,
-    Callback = function(v)
-        Runtime.StatDelay = v
-    end
+    Callback = function(v) Runtime.StatDelay = v end
 })
 
 local statList = GetStatList()
-if #statList == 0 then
-    statList = {"No Stats"}
-end
+if #statList == 0 then statList = {"No Stats"} end
 
-local StatDropdown = Tabs.Stats:AddDropdown("SD2", {
-    Title = "Stat Name",
-    Values = statList
+local StatDropdown = Tabs.Stats:AddDropdown("Stat Name", {
+    Title = "Select Stat",
+    Values = statList,
+    AllowNull = true
 }):OnChanged(function(v)
-    if v ~= "No Stats" then
-        Runtime.StatName = v
-    end
+    if v ~= "No Stats" then Runtime.StatName = v end
 end)
+
+Tabs.FarmBoss:AddDropdown("BossSelect", {
+    Title = "Select Boss",
+    Values = {"Fujitora", "Rayleigh", "Mihawk", "Shanks", "Don Krieg"},
+    AllowNull = true
+}):OnChanged(function(v) Runtime.SelectedBoss = v end)
+
+Tabs.FarmBoss:AddToggle("Auto Farm Boss", {
+    Title = "Auto Farm Boss",
+    Description = "Farm selected boss only"
+}):OnChanged(function(v) Runtime.AutoFarmBoss = v end)
+
+Tabs.FarmBoss:AddToggle("Auto Farm All Boss", {
+    Title = "Auto Farm All Boss",
+    Description = "Automatically farm all bosses"
+}):OnChanged(function(v) Runtime.AutoFarmAllBoss = v end)
+
+AddBigTitle(Tabs.FarmBoss, "Farm Boss Spawn")
+Tabs.FarmBoss:AddDropdown("SpawnBossSelect", {
+    Title = "Select Boss Spawner",
+    Values = {"Zenitsu"},
+    AllowNull = true
+}):OnChanged(function(v) Runtime.SelectedSpawnBoss = v end)
+
+Tabs.FarmBoss:AddToggle("Auto Farm Spawn Boss", {
+    Title = "Start Multi Boss Farm",
+    Description = "Teleport to spawn NPC and farm boss"
+}):OnChanged(function(v) Runtime.AutoFarmSpawnBoss = v end)
+
+AddBigTitle(Tabs.Teleport, "Teleport To NPC")
+local TeleportList = {}
+local PathsToCheck = {
+    workspace:FindFirstChild("Ignore") and workspace.Ignore:FindFirstChild("Characters") and workspace.Ignore.Characters:FindFirstChild("NPCs") and workspace.Ignore.Characters.NPCs:FindFirstChild("FriendlyNPCs") and workspace.Ignore.Characters.NPCs.FriendlyNPCs:FindFirstChild("Interaction") and workspace.Ignore.Characters.NPCs.FriendlyNPCs.Interaction:FindFirstChild("Unlocks"),
+    workspace:FindFirstChild("Ignore") and workspace.Ignore:FindFirstChild("Characters") and workspace.Ignore.Characters:FindFirstChild("NPCs") and workspace.Ignore.Characters.NPCs:FindFirstChild("FriendlyNPCs") and workspace.Ignore.Characters.NPCs.FriendlyNPCs:FindFirstChild("Interaction") and workspace.Ignore.Characters.NPCs.FriendlyNPCs.Interaction:FindFirstChild("Transactions")
+}
+
+local uniqueNPCs = {}
+for _, path in ipairs(PathsToCheck) do
+    if path then
+        for _, npc in ipairs(path:GetChildren()) do
+            if npc:IsA("Model") and npc.Name ~= "Ghost" then
+                uniqueNPCs[npc.Name] = true
+            end
+        end
+    end
+end
+for name, _ in pairs(uniqueNPCs) do table.insert(TeleportList, name) end
+table.sort(TeleportList)
+if #TeleportList == 0 then TeleportList = {"No NPCs Found"} end
+
+local TeleportNPCDropdown = Tabs.Teleport:AddDropdown("TeleportNPC", {
+    Title = "Select NPC",
+    Values = TeleportList,
+    AllowNull = true
+}):OnChanged(function(v) Runtime.SelectedTeleportNPC = v end)
+
+Tabs.Teleport:AddButton({
+    Title = "Teleport to NPC",
+    Callback = function()
+        if not Runtime.SelectedTeleportNPC or Runtime.SelectedTeleportNPC == "No NPCs Found" then
+            Fluent:Notify({ Title = "Error", Content = "Please select an NPC first", Duration = 3 })
+            return
+        end
+        local targetNPC = nil
+        for _, path in ipairs(PathsToCheck) do
+            if path then
+                local found = path:FindFirstChild(Runtime.SelectedTeleportNPC)
+                if found then targetNPC = found break end
+            end
+        end
+        if targetNPC and targetNPC:FindFirstChild("HumanoidRootPart") then
+            HRP().CFrame = targetNPC.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
+            Fluent:Notify({ Title = "Teleport", Content = "Teleported to " .. Runtime.SelectedTeleportNPC, Duration = 2 })
+        else
+            Fluent:Notify({ Title = "Error", Content = "NPC not found or invalid", Duration = 3 })
+        end
+    end
+})
+
+AddBigTitle(Tabs.Teleport, "Teleport To Island")
+local IslandPath = workspace:FindFirstChild("Ignore") and workspace.Ignore:FindFirstChild("Locations")
+local IslandList = {}
+if IslandPath then
+    for _, island in ipairs(IslandPath:GetChildren()) do
+        if island:IsA("Model") or island:IsA("Folder") then table.insert(IslandList, island.Name) end
+    end
+end
+if #IslandList == 0 then IslandList = {"No Islands Found"} end
+
+local IslandDropdown = Tabs.Teleport:AddDropdown("SelectIsland", {
+    Title = "Select Island",
+    Values = IslandList,
+    AllowNull = true
+}):OnChanged(function(v) Runtime.SelectedTeleportIsland = v end)
+
+Tabs.Teleport:AddButton({
+    Title = "Teleport to Island",
+    Callback = function()
+        if not Runtime.SelectedTeleportIsland or Runtime.SelectedTeleportIsland == "No Islands Found" then
+            Fluent:Notify({ Title = "Error", Content = "Please select an island first", Duration = 3 })
+            return
+        end
+        local targetIsland = IslandPath:FindFirstChild(Runtime.SelectedTeleportIsland)
+        local targetPosition = nil
+        if targetIsland then
+            local primaryPart = targetIsland:FindFirstChildWhichIsA("BasePart", true)
+            if primaryPart then targetPosition = primaryPart.Position else targetPosition = targetIsland:GetPivot().Position end
+        end
+        if targetPosition then
+            HRP().CFrame = CFrame.new(targetPosition + Vector3.new(0, 50, 0))
+            Fluent:Notify({ Title = "Teleport", Content = "Teleported to " .. Runtime.SelectedTeleportIsland, Duration = 2 })
+        else
+            Fluent:Notify({ Title = "Error", Content = "Island location not found", Duration = 3 })
+        end
+    end
+})
 
 SaveManager:SetLibrary(Fluent)
 InterfaceManager:SetLibrary(Fluent)
-InterfaceManager:SetFolder("AutoScript")
-SaveManager:SetFolder("AutoScript/configs")
+InterfaceManager:SetFolder("ReignPieceScript") 
+SaveManager:SetFolder("ReignPieceScript/configs")
 InterfaceManager:BuildInterfaceSection(Tabs.Settings)
 SaveManager:BuildConfigSection(Tabs.Settings)
 
