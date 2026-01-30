@@ -84,17 +84,96 @@ local function GetLevel()
     return 0
 end
 
+local WeaponDropdown = nil
+local LastWeaponCount = 0
+local DropdownCurrentValue = nil
+
 local function GetWeaponList()
     local weapons = {}
-    if LP.Backpack then
-        for _,v in ipairs(LP.Backpack:GetChildren()) do
+    local char = LP.Character
+    local backpack = LP.Backpack
+
+    if backpack then
+        for _,v in ipairs(backpack:GetChildren()) do
             if v:IsA("Tool") then
                 table.insert(weapons, v.Name)
             end
         end
     end
+
+    if char then
+        for _,v in ipairs(char:GetChildren()) do
+            if v:IsA("Tool") then
+                local found = false
+                for _, wName in pairs(weapons) do
+                    if wName == v.Name then
+                        found = true
+                        break
+                    end
+                end
+                if not found then
+                    table.insert(weapons, v.Name)
+                end
+            end
+        end
+    end
     return weapons
 end
+
+local function WatchWeaponDropdown()
+    task.spawn(function()
+        while task.wait(0.2) do
+            if WeaponDropdown then
+                local currentVal = WeaponDropdown.Value
+                
+                if currentVal ~= DropdownCurrentValue then
+                    DropdownCurrentValue = currentVal
+                    Runtime.Weapon = currentVal
+                end
+            end
+        end
+    end)
+end
+
+local function StartAutoWeaponCheck()
+    task.spawn(function()
+        while task.wait(0.5) do
+            if not WeaponDropdown then continue end
+
+            local currentList = GetWeaponList()
+            local currentCount = #currentList
+
+            if currentCount ~= LastWeaponCount then
+                LastWeaponCount = currentCount
+                
+                if #currentList == 0 then currentList = {"No Weapons"} end
+                
+                WeaponDropdown:SetValues(currentList)
+                
+                if WeaponDropdown.Value == nil then
+                    Runtime.Weapon = nil
+                    DropdownCurrentValue = nil
+                end
+            end
+        end
+    end)
+end
+
+local weaponList = GetWeaponList()
+LastWeaponCount = #weaponList
+if #weaponList == 0 then weaponList = {"No Weapons"} end
+
+WeaponDropdown = Tabs.Weapon:AddDropdown("Weapon", {
+    Title = "Select Weapon",
+    Values = weaponList,
+    AllowNull = true
+})
+
+WeaponDropdown:OnChanged(function(v)
+end)
+
+WatchWeaponDropdown()
+StartAutoWeaponCheck()
 
 local function EquipWeapon()
     if not Runtime.Weapon then return end
@@ -103,6 +182,7 @@ local function EquipWeapon()
     local tool = LP.Backpack:FindFirstChild(Runtime.Weapon)
     if tool then
         tool.Parent = char
+    elseif char:FindFirstChild(Runtime.Weapon) then
     end
 end
 
@@ -245,7 +325,7 @@ local function BringAllMobsToFirstMob()
     end
 end
 
-local QuestRoot = workspace:FindFirstChild("Ignore") and workspace.Ignore:FindFirstChild("Characters") and workspace.Ignore.Characters:FindFirstChild("NPCs") and workspace.Ignore.Characters.NPCs:FindFirstChild("FriendlyNPCs") and workspace.Ignore.Characters.NPCs.FriendlyNPCs:FindFirstChild("Interaction") and workspace.Ignore.Characters.NPCs.FriendlyNPCs.Interaction:FindFirstChild("Quest")
+local QuestRoot = workspace:FindFirstChild("Ignore") and workspace.Ignore:FindFirstChild("Characters") and workspace.Ignore.Characters:FindFirstChild("NPCs") and workspace.Ignore.Characters.NPCs.FriendlyNPCs.Interaction:FindFirstChild("Quest")
 if not QuestRoot then QuestRoot = {} end
 
 local function GetQuestNPC()
@@ -452,7 +532,7 @@ task.spawn(function()
         if not Runtime.AutoFarmSpawnBoss then continue end
         if not Runtime.SelectedSpawnBoss then continue end
 
-        local Transactions = workspace:FindFirstChild("Ignore") and workspace.Ignore:FindFirstChild("Characters") and workspace.Ignore.Characters:FindFirstChild("NPCs") and workspace.Ignore.Characters.NPCs:FindFirstChild("FriendlyNPCs") and workspace.Ignore.Characters.NPCs.FriendlyNPCs:FindFirstChild("Interaction") and workspace.Ignore.Characters.NPCs.FriendlyNPCs.Interaction:FindFirstChild("Transactions")
+        local Transactions = workspace:FindFirstChild("Ignore") and workspace.Ignore:FindFirstChild("Characters") and workspace.Ignore.Characters:FindFirstChild("NPCs") and workspace.Ignore.Characters.NPCs:FindFirstChild("FriendlyNPCs") and workspace.Ignore.Characters.NPCs.FriendlyNPCs.Interaction:FindFirstChild("Transactions")
         local SpawnNPC = nil
         if Transactions then SpawnNPC = Transactions:FindFirstChild("Shock Ghost") end
 
@@ -534,23 +614,13 @@ Tabs.Weapon:AddToggle("Auto Equip", {
     Description = "Automatically Equip Weapon"
 }):OnChanged(function(v) Runtime.AutoEquip = v end)
 
-local weaponList = GetWeaponList()
-if #weaponList == 0 then weaponList = {"No Weapons"} end
-
-local WeaponDropdown = Tabs.Weapon:AddDropdown("Weapon", {
-    Title = "Select Weapon",
-    Values = weaponList,
-    AllowNull = true
-}):OnChanged(function(v)
-    if v ~= "No Weapons" then Runtime.Weapon = v end
-end)
-
 Tabs.Weapon:AddButton({
     Title = "Refresh Weapons",
     Callback = function()
         local newWeaponList = GetWeaponList()
         if #newWeaponList == 0 then newWeaponList = {"No Weapons"} end
-        if WeaponDropdown then WeaponDropdown:SetValues(newWeaponList) end
+        WeaponDropdown:SetValues(newWeaponList)
+        LastWeaponCount = #newWeaponList
     end
 })
 
@@ -610,8 +680,8 @@ Tabs.FarmBoss:AddToggle("Auto Farm Spawn Boss", {
 AddBigTitle(Tabs.Teleport, "Teleport To NPC")
 local TeleportList = {}
 local PathsToCheck = {
-    workspace:FindFirstChild("Ignore") and workspace.Ignore:FindFirstChild("Characters") and workspace.Ignore.Characters:FindFirstChild("NPCs") and workspace.Ignore.Characters.NPCs:FindFirstChild("FriendlyNPCs") and workspace.Ignore.Characters.NPCs.FriendlyNPCs:FindFirstChild("Interaction") and workspace.Ignore.Characters.NPCs.FriendlyNPCs.Interaction:FindFirstChild("Unlocks"),
-    workspace:FindFirstChild("Ignore") and workspace.Ignore:FindFirstChild("Characters") and workspace.Ignore.Characters:FindFirstChild("NPCs") and workspace.Ignore.Characters.NPCs:FindFirstChild("FriendlyNPCs") and workspace.Ignore.Characters.NPCs.FriendlyNPCs:FindFirstChild("Interaction") and workspace.Ignore.Characters.NPCs.FriendlyNPCs.Interaction:FindFirstChild("Transactions")
+    workspace:FindFirstChild("Ignore") and workspace.Ignore:FindFirstChild("Characters") and workspace.Ignore.Characters:FindFirstChild("NPCs") and workspace.Ignore.Characters.NPCs:FindFirstChild("FriendlyNPCs") and workspace.Ignore.Characters.NPCs.FriendlyNPCs.Interaction:FindFirstChild("Unlocks"),
+    workspace:FindFirstChild("Ignore") and workspace.Ignore:FindFirstChild("Characters") and workspace.Ignore.Characters:FindFirstChild("NPCs") and workspace.Ignore.Characters.NPCs:FindFirstChild("FriendlyNPCs") and workspace.Ignore.Characters.NPCs.FriendlyNPCs.Interaction:FindFirstChild("Transactions")
 }
 
 local uniqueNPCs = {}
