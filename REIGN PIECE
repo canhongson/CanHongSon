@@ -16,6 +16,7 @@ local Tabs = {
     Main = Window:AddTab({ Title = "Main", Icon = "home" }),
     FarmBoss = Window:AddTab({ Title = "Farm Boss", Icon = "sword" }),
     Weapon = Window:AddTab({ Title = "Weapon", Icon = "shield" }),
+    Dungeon = Window:AddTab({ Title = "Dungeon", Icon = "compass" }),
     Stats = Window:AddTab({ Title = "Stats", Icon = "bar-chart-2" }),
     Teleport = Window:AddTab({ Title = "Teleport", Icon = "map" }),
     Settings = Window:AddTab({ Title = "Settings", Icon = "settings" })
@@ -62,7 +63,9 @@ local Runtime = {
     AutoFarmSpawnBoss = false,
     SelectedSpawnBoss = nil,
     SelectedTeleportNPC = nil,
-    SelectedTeleportIsland = nil
+    SelectedTeleportIsland = nil,
+    AutoFarmDungeon = false,
+    AutoOpenSukunaChest = false
 }
 
 local function Char()
@@ -238,6 +241,110 @@ task.spawn(function()
     end
 end)
 
+local DungeonLockConn
+
+local function GetDungeonNPCSpawnPositions()
+    local spawnPoints = {}
+    local dungeonRoot = workspace:FindFirstChild("Game") and workspace.Game:FindFirstChild("Map") and workspace.Game.Map:FindFirstChild("Terrain") and workspace.Game.Map.Terrain:FindFirstChild("dungeons")
+    if not dungeonRoot then return spawnPoints end
+    
+    local castleRun = dungeonRoot:FindFirstChild("Infinity Castle_RUN")
+    if not castleRun then return spawnPoints end
+    
+    local subFolder = nil
+    for _, child in ipairs(castleRun:GetChildren()) do
+        if child.Name:find("Infinity Castle_RUN_") then
+            subFolder = child
+            break
+        end
+    end
+    if not subFolder then return spawnPoints end
+    
+    local spawnBrickNPCs = subFolder:FindFirstChild("SPAWNBRICKNPCS")
+    if not spawnBrickNPCs then return spawnPoints end
+    
+    for _, part in ipairs(spawnBrickNPCs:GetDescendants()) do
+        if part:IsA("BasePart") then
+            table.insert(spawnPoints, part.Position)
+        end
+    end
+    return spawnPoints
+end
+
+local function GetDungeonTarget()
+    local spawnPoints = GetDungeonNPCSpawnPositions()
+    if #spawnPoints == 0 then return nil end
+    
+    local EnemyNPCs = workspace:FindFirstChild("Ignore") and workspace.Ignore:FindFirstChild("Characters") and workspace.Ignore.Characters:FindFirstChild("NPCs") and workspace.Ignore.Characters.NPCs:FindFirstChild("EnemyNPCs")
+    if not EnemyNPCs then return nil end
+    
+    local closestMob = nil
+    local closestDist = math.huge
+    
+    for _, mob in ipairs(EnemyNPCs:GetChildren()) do
+        if mob:IsA("Model") and mob:FindFirstChild("HumanoidRootPart") and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
+            local mobPos = mob.HumanoidRootPart.Position
+            
+            local isDungeonMob = false
+            for _, spawnPos in ipairs(spawnPoints) do
+                if (mobPos - spawnPos).Magnitude < 50 then 
+                    isDungeonMob = true
+                    break
+                end
+            end
+            
+            if isDungeonMob then
+                local dist = (HRP().Position - mobPos).Magnitude
+                if dist < closestDist then
+                    closestDist = dist
+                    closestMob = mob
+                end
+            end
+        end
+    end
+    return closestMob
+end
+
+local function StartDungeonFarm()
+    task.spawn(function()
+        while task.wait(0.1) do
+            if not Runtime.AutoFarmDungeon then
+                if DungeonLockConn then DungeonLockConn:Disconnect() DungeonLockConn = nil end
+                continue
+            end
+
+            local target = GetDungeonTarget()
+            if not target then 
+                task.wait(1)
+                continue
+            end
+
+            if DungeonLockConn then DungeonLockConn:Disconnect() end
+            
+            DungeonLockConn = RunService.Heartbeat:Connect(function()
+                if not Runtime.AutoFarmDungeon or not target or not target.Parent or not target:FindFirstChild("Humanoid") or target.Humanoid.Health <= 0 then
+                    if DungeonLockConn then DungeonLockConn:Disconnect() DungeonLockConn = nil end
+                    return
+                end
+                
+                local pos = target.HumanoidRootPart.Position + Vector3.new(0, Runtime.SafeY or 10, 0)
+                HRP().CFrame = CFrame.lookAt(pos, target.HumanoidRootPart.Position)
+                HRP().AssemblyLinearVelocity = Vector3.zero
+                HRP().AssemblyAngularVelocity = Vector3.zero
+            end)
+
+            while Runtime.AutoFarmDungeon and target and target.Parent and target:FindFirstChild("Humanoid") and target.Humanoid.Health > 0 do
+                if Runtime.AutoEquip then EquipWeapon() end
+                local M1 = RS:FindFirstChild("Remotes") and RS.Remotes:FindFirstChild("Events") and RS.Remotes.Events:FindFirstChild("M1")
+                if M1 then pcall(function() M1:FireServer("Action", 1) end) end
+                task.wait(Runtime.AttackDelay)
+            end
+            
+            if DungeonLockConn then DungeonLockConn:Disconnect() DungeonLockConn = nil end
+        end
+    end)
+end
+
 local LockConn
 local function LockOnMob(mob)
     if LockConn then LockConn:Disconnect() end
@@ -347,7 +454,7 @@ end
 
 local function TakeQuest()
     local npc = GetQuestNPC()
-    if not npc or not npc:FindFirstChild("HumanoidRootPart") then return end
+    if not npc or not npc:FindFirstChild("HumanoidRootPart") then return end 
     HRP().CFrame = npc.HumanoidRootPart.CFrame * CFrame.new(0,0,3)
     task.wait(0.3)
     VIM:SendKeyEvent(true, Enum.KeyCode.E, false, game)
@@ -360,9 +467,7 @@ local function GetQuestMob()
     local name = GetQuestMobName()
     if not name then return end
     for _,mob in ipairs(EnemyFolder:GetChildren()) do
-        if mob.Name == name and mob:FindFirstChild("HumanoidRootPart") and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
-            return mob
-        end
+        if mob.Name == name and mob:FindFirstChild("HumanoidRootPart") and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then return mob end 
     end
 end
 
@@ -385,15 +490,16 @@ end
 
 local function TeleportToQuestNPC()
     local npc = GetQuestNPC()
-    if npc and npc:FindFirstChild("HumanoidRootPart") then
-        HRP().CFrame = npc.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
-        task.wait(0.3)
-    end
+    if not npc or not npc:FindFirstChild("HumanoidRootPart") then return end
+    HRP().CFrame = npc.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
+    task.wait(0.3)
 end
 
 task.spawn(function()
     while task.wait(0.05) do
         if not Runtime.AutoFarm then continue end
+        if Runtime.AutoOpenSukunaChest then continue end 
+        
         TeleportToQuestNPC()
         BringAllMobsToFirstMob()
     end
@@ -402,6 +508,8 @@ end)
 task.spawn(function()
     while task.wait(0.1) do
         if not Runtime.AutoFarm then continue end
+        if Runtime.AutoOpenSukunaChest then continue end
+
         if not HasQuest() then
             TakeQuest()
             task.wait(1)
@@ -415,6 +523,8 @@ task.spawn(function()
         if Runtime.BringMob then
             LockOnFirstMobWithSafeY(mob)
             while Runtime.AutoFarm and Runtime.BringMob do
+                if Runtime.AutoOpenSukunaChest then break end
+
                 local currentMob = GetQuestMob()
                 if not currentMob or not currentMob.Parent or not currentMob:FindFirstChild("Humanoid") or currentMob.Humanoid.Health <= 0 then
                     break
@@ -425,6 +535,8 @@ task.spawn(function()
         else
             LockOnMob(mob)
             while Runtime.AutoFarm and not Runtime.BringMob do
+                if Runtime.AutoOpenSukunaChest then break end
+
                 if not mob or not mob.Parent or not mob:FindFirstChild("Humanoid") or mob.Humanoid.Health <= 0 then
                     break
                 end
@@ -513,6 +625,7 @@ task.spawn(function()
 end)
 
 local SpawnBossLockConn
+
 local function LockOnSpawnBoss(boss)
     if SpawnBossLockConn then SpawnBossLockConn:Disconnect() end
     SpawnBossLockConn = RunService.Heartbeat:Connect(function()
@@ -527,41 +640,25 @@ local function LockOnSpawnBoss(boss)
     end)
 end
 
+local SpawnNPCMap = {
+    ["Zenitsu"] = "Shock Ghost",
+    ["Shinra"] = "Flaming Ghost",
+    ["Sukuna"] = "Vessel Ghost",
+    ["Kirito"] = "Life Ghost",
+    ["Toji"] = "Zesty Ghost",
+}
+
 task.spawn(function()
     while task.wait(0.1) do
         if not Runtime.AutoFarmSpawnBoss then continue end
         if not Runtime.SelectedSpawnBoss then continue end
 
-        local Transactions = workspace:FindFirstChild("Ignore") and workspace.Ignore:FindFirstChild("Characters") and workspace.Ignore.Characters:FindFirstChild("NPCs") and workspace.Ignore.Characters.NPCs:FindFirstChild("FriendlyNPCs") and workspace.Ignore.Characters.NPCs.FriendlyNPCs.Interaction:FindFirstChild("Transactions")
-        local SpawnNPC = nil
-        if Transactions then SpawnNPC = Transactions:FindFirstChild("Shock Ghost") end
-
-        if not SpawnNPC or not SpawnNPC:FindFirstChild("HumanoidRootPart") then
-            Fluent:Notify({ Title = "Error", Content = "Spawn NPC not found", Duration = 3 })
-            Runtime.AutoFarmSpawnBoss = false
-            continue
-        end
-
-        HRP().CFrame = SpawnNPC.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
-        task.wait(0.5)
-        VIM:SendKeyEvent(true, Enum.KeyCode.E, false, game)
-        task.wait(0.1)
-        VIM:SendKeyEvent(false, Enum.KeyCode.E, false, game)
-        task.wait(1)
-
         local boss = nil
-        local maxWaitTime = 0.1
-        local waited = 0
-        while waited < maxWaitTime do
-            if not Runtime.AutoFarmSpawnBoss then break end
-            for _, mob in ipairs(EnemyFolder:GetChildren()) do
-                if mob.Name == Runtime.SelectedSpawnBoss and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
-                    boss = mob break
-                end
+        for _, mob in ipairs(EnemyFolder:GetChildren()) do
+            if mob.Name == Runtime.SelectedSpawnBoss and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
+                boss = mob
+                break
             end
-            if boss then break end
-            task.wait(0.5)
-            waited = waited + 0.4
         end
 
         if boss then
@@ -573,10 +670,62 @@ task.spawn(function()
             end
             if SpawnBossLockConn then SpawnBossLockConn:Disconnect() SpawnBossLockConn = nil end
         else
+            local Transactions = workspace:FindFirstChild("Ignore") and workspace.Ignore:FindFirstChild("Characters") and workspace.Ignore.Characters:FindFirstChild("NPCs") and workspace.Ignore.Characters.NPCs:FindFirstChild("FriendlyNPCs") and workspace.Ignore.Characters.NPCs.FriendlyNPCs.Interaction:FindFirstChild("Transactions")
+            local SpawnNPC = nil
+            
+            if Transactions then
+                local targetSpawnerName = SpawnNPCMap[Runtime.SelectedSpawnBoss]
+                if targetSpawnerName then
+                    SpawnNPC = Transactions:FindFirstChild(targetSpawnerName)
+                end
+                
+                if not SpawnNPC then
+                    SpawnNPC = Transactions:FindFirstChild(Runtime.SelectedSpawnBoss)
+                end
+            end
+
+            if not SpawnNPC or not SpawnNPC:FindFirstChild("HumanoidRootPart") then
+                task.wait(1)
+                continue
+            end
+
+            HRP().CFrame = SpawnNPC.HumanoidRootPart.CFrame * CFrame.new(0,0,0)
+            task.wait(0.5)
+            VIM:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+            task.wait(0.1)
+            VIM:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+            task.wait(1)
         end
         task.wait(0.1)
     end
 end)
+
+task.spawn(function()
+    while task.wait(0.1) do
+        if not Runtime.AutoOpenSukunaChest then continue end
+
+        local SukunaChest = workspace:FindFirstChild("Ignore") and workspace.Ignore:FindFirstChild("Chests") and workspace.Ignore.Chests:FindFirstChild("Sukuna")
+        
+        if not SukunaChest or not SukunaChest:IsA("Model") then
+            task.wait(1)
+            continue
+        end
+        
+        local chestPart = SukunaChest:FindFirstChildWhichIsA("BasePart")
+        if chestPart then
+            HRP().CFrame = CFrame.new(chestPart.Position + Vector3.new(0, 3, 0))
+            task.wait(0.5)
+            
+            VIM:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+            task.wait(2) 
+            VIM:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+            
+            task.wait(1)
+        end
+        task.wait(0.1)
+    end
+end)
+
 
 Tabs.Main:AddToggle("Auto Farm", {
     Title = "Auto Farm",
@@ -649,9 +798,16 @@ local StatDropdown = Tabs.Stats:AddDropdown("Stat Name", {
     if v ~= "No Stats" then Runtime.StatName = v end
 end)
 
+Tabs.Dungeon:AddToggle("Auto Farm Dungeon", {
+    Title = "Auto Farm Dungeon",
+    Description = ""
+}):OnChanged(function(v) Runtime.AutoFarmDungeon = v end)
+
+StartDungeonFarm()
+
 Tabs.FarmBoss:AddDropdown("BossSelect", {
     Title = "Select Boss",
-    Values = {"Fujitora", "Rayleigh", "Mihawk", "Shanks", "Don Krieg"},
+    Values = {"Fujitora", "Rayleigh", "Mihawk", "Shanks"},
     AllowNull = true
 }):OnChanged(function(v) Runtime.SelectedBoss = v end)
 
@@ -662,20 +818,26 @@ Tabs.FarmBoss:AddToggle("Auto Farm Boss", {
 
 Tabs.FarmBoss:AddToggle("Auto Farm All Boss", {
     Title = "Auto Farm All Boss",
-    Description = "Automatically farm all bosses"
+    Description = "Automatically farm all boss"
 }):OnChanged(function(v) Runtime.AutoFarmAllBoss = v end)
 
 AddBigTitle(Tabs.FarmBoss, "Farm Boss Spawn")
 Tabs.FarmBoss:AddDropdown("SpawnBossSelect", {
     Title = "Select Boss Spawner",
-    Values = {"Zenitsu"},
+    Values = {"Zenitsu", "Shinra", "Sukuna", "Kirito", "Toji"},
     AllowNull = true
 }):OnChanged(function(v) Runtime.SelectedSpawnBoss = v end)
 
 Tabs.FarmBoss:AddToggle("Auto Farm Spawn Boss", {
-    Title = "Start Multi Boss Farm",
-    Description = "Teleport to spawn NPC and farm boss"
+    Title = "Start Farm boss",
+    Description = ""
 }):OnChanged(function(v) Runtime.AutoFarmSpawnBoss = v end)
+
+AddBigTitle(Tabs.FarmBoss, "Chest")
+Tabs.FarmBoss:AddToggle("Auto Open Sukuna Chest", {
+    Title = "Open Sukuna Chest",
+    Description = ""
+}):OnChanged(function(v) Runtime.AutoOpenSukunaChest = v end)
 
 AddBigTitle(Tabs.Teleport, "Teleport To NPC")
 local TeleportList = {}
@@ -719,7 +881,7 @@ Tabs.Teleport:AddButton({
             end
         end
         if targetNPC and targetNPC:FindFirstChild("HumanoidRootPart") then
-            HRP().CFrame = targetNPC.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
+            HRP().CFrame = targetNPC.HumanoidRootPart.CFrame * CFrame.new(0,0,3)
             Fluent:Notify({ Title = "Teleport", Content = "Teleported to " .. Runtime.SelectedTeleportNPC, Duration = 2 })
         else
             Fluent:Notify({ Title = "Error", Content = "NPC not found or invalid", Duration = 3 })
@@ -778,4 +940,4 @@ Fluent:Notify({
     Duration = 5
 })
 
-SaveManager:LoadAutoloadConfig()
+SaveManager:LoadAutoloadConfig() 
