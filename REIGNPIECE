@@ -65,7 +65,8 @@ local Runtime = {
     SelectedTeleportNPC = nil,
     SelectedTeleportIsland = nil,
     AutoFarmDungeon = false,
-    AutoOpenSukunaChest = false
+    AutoOpenSukunaChest = false,
+    AutoHaki = false
 }
 
 local function Char()
@@ -241,6 +242,25 @@ task.spawn(function()
     end
 end)
 
+task.spawn(function()
+    while task.wait(0.5) do
+        if Runtime.AutoHaki then
+            local char = LP.Character
+            if char then
+                local Humans = workspace:FindFirstChild("Ignore") and workspace.Ignore:FindFirstChild("Characters") and workspace.Ignore.Characters:FindFirstChild("Humans")
+                if Humans then
+                    local myChar = Humans:FindFirstChild(LP.Name)
+                    if myChar and not myChar:FindFirstChild("_HakiPart") then
+                        VIM:SendKeyEvent(true, Enum.KeyCode.H, false, game)
+                        task.wait(0.1)
+                        VIM:SendKeyEvent(false, Enum.KeyCode.H, false, game)
+                    end
+                end
+            end
+        end
+    end
+end)
+
 local DungeonLockConn
 
 local function GetDungeonNPCSpawnPositions()
@@ -313,6 +333,33 @@ local function StartDungeonFarm()
                 continue
             end
 
+            if Runtime.BringMob then
+                local spawnPoints = GetDungeonNPCSpawnPositions()
+                if #spawnPoints > 0 then
+                    local EnemyNPCs = workspace:FindFirstChild("Ignore") and workspace.Ignore:FindFirstChild("Characters") and workspace.Ignore.Characters:FindFirstChild("NPCs") and workspace.Ignore.Characters.NPCs:FindFirstChild("EnemyNPCs")
+                    if EnemyNPCs then
+                        local targetPos = HRP().Position
+                        for _, mob in ipairs(EnemyNPCs:GetChildren()) do
+                            if mob:IsA("Model") and mob:FindFirstChild("HumanoidRootPart") and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
+                                local mobPos = mob.HumanoidRootPart.Position
+                                local isDungeonMob = false
+                                for _, spawnPos in ipairs(spawnPoints) do
+                                    if (mobPos - spawnPos).Magnitude < 60 then
+                                        isDungeonMob = true
+                                        break
+                                    end
+                                end
+                                if isDungeonMob then
+                                    mob.HumanoidRootPart.CFrame = CFrame.new(targetPos)
+                                    mob.HumanoidRootPart.AssemblyLinearVelocity = Vector3.zero
+                                    mob.HumanoidRootPart.AssemblyAngularVelocity = Vector3.zero
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+
             local target = GetDungeonTarget()
             if not target then 
                 task.wait(1)
@@ -335,6 +382,34 @@ local function StartDungeonFarm()
 
             while Runtime.AutoFarmDungeon and target and target.Parent and target:FindFirstChild("Humanoid") and target.Humanoid.Health > 0 do
                 if Runtime.AutoEquip then EquipWeapon() end
+                
+                if Runtime.BringMob then
+                     local spawnPoints = GetDungeonNPCSpawnPositions()
+                     if #spawnPoints > 0 then
+                        local EnemyNPCs = workspace:FindFirstChild("Ignore") and workspace.Ignore:FindFirstChild("Characters") and workspace.Ignore.Characters:FindFirstChild("NPCs") and workspace.Ignore.Characters.NPCs:FindFirstChild("EnemyNPCs")
+                        if EnemyNPCs then
+                            local targetPos = HRP().Position
+                            for _, mob in ipairs(EnemyNPCs:GetChildren()) do
+                                if mob:IsA("Model") and mob:FindFirstChild("HumanoidRootPart") and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
+                                    local mobPos = mob.HumanoidRootPart.Position
+                                    local isDungeonMob = false
+                                    for _, spawnPos in ipairs(spawnPoints) do
+                                        if (mobPos - spawnPos).Magnitude < 60 then
+                                            isDungeonMob = true
+                                            break
+                                        end
+                                    end
+                                    if isDungeonMob then
+                                        mob.HumanoidRootPart.CFrame = CFrame.new(targetPos)
+                                        mob.HumanoidRootPart.AssemblyLinearVelocity = Vector3.zero
+                                        mob.HumanoidRootPart.AssemblyAngularVelocity = Vector3.zero
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+
                 local M1 = RS:FindFirstChild("Remotes") and RS.Remotes:FindFirstChild("Events") and RS.Remotes.Events:FindFirstChild("M1")
                 if M1 then pcall(function() M1:FireServer("Action", 1) end) end
                 task.wait(Runtime.AttackDelay)
@@ -726,7 +801,6 @@ task.spawn(function()
     end
 end)
 
-
 Tabs.Main:AddToggle("Auto Farm", {
     Title = "Auto Farm",
     Description = "Automatically Farm Level"
@@ -736,6 +810,11 @@ Tabs.Main:AddToggle("Bring Mobs", {
     Title = "Bring Mobs",
     Description = ""
 }):OnChanged(function(v) Runtime.BringMob = v end)
+
+Tabs.Main:AddToggle("Auto Haki", {
+    Title = "Auto Haki",
+    Description = ""
+}):OnChanged(function(v) Runtime.AutoHaki = v end)
 
 AddBigTitle(Tabs.Main, "Settings")
 Tabs.Main:AddSlider("Attack Delay", {
@@ -843,7 +922,7 @@ AddBigTitle(Tabs.Teleport, "Teleport To NPC")
 local TeleportList = {}
 local PathsToCheck = {
     workspace:FindFirstChild("Ignore") and workspace.Ignore:FindFirstChild("Characters") and workspace.Ignore.Characters:FindFirstChild("NPCs") and workspace.Ignore.Characters.NPCs:FindFirstChild("FriendlyNPCs") and workspace.Ignore.Characters.NPCs.FriendlyNPCs.Interaction:FindFirstChild("Unlocks"),
-    workspace:FindFirstChild("Ignore") and workspace.Ignore:FindFirstChild("Characters") and workspace.Ignore.Characters:FindFirstChild("NPCs") and workspace.Ignore.Characters.NPCs:FindFirstChild("FriendlyNPCs") and workspace.Ignore.Characters.NPCs.FriendlyNPCs.Interaction:FindFirstChild("Transactions")
+    workspace:FindFirstChild("Ignore") and workspace.Ignore:FindFirstChild("Characters") and workspace.Ignore.Characters:FindFirstChild("NPCs") and workspace.Ignore.Characters.NPCs.FriendlyNPCs.Interaction:FindFirstChild("Transactions")
 }
 
 local uniqueNPCs = {}
@@ -940,4 +1019,4 @@ Fluent:Notify({
     Duration = 5
 })
 
-SaveManager:LoadAutoloadConfig() 
+SaveManager:LoadAutoloadConfig()
