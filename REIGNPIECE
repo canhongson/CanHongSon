@@ -936,7 +936,6 @@ task.spawn(function()
     end
 end)
 
-AddBigTitle(Tabs.Skills, "Auto Skills")
 Tabs.Skills:AddToggle("Auto Z", { Title = "Auto Skill Z", Description = "" }):OnChanged(function(v) Runtime.AutoZ = v end)
 Tabs.Skills:AddToggle("Auto X", { Title = "Auto Skill X", Description = "" }):OnChanged(function(v) Runtime.AutoX = v end)
 Tabs.Skills:AddToggle("Auto C", { Title = "Auto Skill C", Description = "" }):OnChanged(function(v) Runtime.AutoC = v end)
