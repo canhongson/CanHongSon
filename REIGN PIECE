@@ -491,7 +491,7 @@ end
 local function TeleportToQuestNPC()
     local npc = GetQuestNPC()
     if not npc or not npc:FindFirstChild("HumanoidRootPart") then return end
-    HRP().CFrame = npc.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
+    HRP().CFrame = npc.HumanoidRootPart.CFrame * CFrame.new(0, 0, 0)
     task.wait(0.3)
 end
 
@@ -713,7 +713,7 @@ task.spawn(function()
         
         local chestPart = SukunaChest:FindFirstChildWhichIsA("BasePart")
         if chestPart then
-            HRP().CFrame = CFrame.new(chestPart.Position + Vector3.new(0, 3, 0))
+            HRP().CFrame = CFrame.new(chestPart.Position + Vector3.new(0, 0, 0))
             task.wait(0.5)
             
             VIM:SendKeyEvent(true, Enum.KeyCode.E, false, game)
