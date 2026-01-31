@@ -16,6 +16,7 @@ local Tabs = {
     Main = Window:AddTab({ Title = "Main", Icon = "home" }),
     FarmBoss = Window:AddTab({ Title = "Farm Boss", Icon = "sword" }),
     Weapon = Window:AddTab({ Title = "Weapon", Icon = "shield" }),
+    Skills = Window:AddTab({ Title = "Skills", Icon = "gamepad-2" }), 
     Dungeon = Window:AddTab({ Title = "Dungeon", Icon = "compass" }),
     Stats = Window:AddTab({ Title = "Stats", Icon = "bar-chart-2" }),
     Teleport = Window:AddTab({ Title = "Teleport", Icon = "map" }),
@@ -66,7 +67,13 @@ local Runtime = {
     SelectedTeleportIsland = nil,
     AutoFarmDungeon = false,
     AutoOpenSukunaChest = false,
-    AutoHaki = false
+    AutoHaki = false,
+    AutoCreateDungeon = false,
+    AutoZ = false,
+    AutoX = false,
+    AutoC = false,
+    AutoV = false,
+    SkillDelay = 0.1
 }
 
 local function Char()
@@ -86,6 +93,15 @@ local function GetLevel()
         return mirror[LP.Name].Information.Level.Value
     end
     return 0
+end
+
+local function IsInDungeon()
+    local dungeonRoot = workspace:FindFirstChild("Game") and workspace.Game:FindFirstChild("Map") and workspace.Game.Map:FindFirstChild("Terrain") and workspace.Game.Map.Terrain:FindFirstChild("dungeons")
+    if dungeonRoot then
+        local castleRun = dungeonRoot:FindFirstChild("Infinity Castle_RUN")
+        if castleRun then return true end
+    end
+    return false
 end
 
 local WeaponDropdown = nil
@@ -129,7 +145,6 @@ local function WatchWeaponDropdown()
         while task.wait(0.2) do
             if WeaponDropdown then
                 local currentVal = WeaponDropdown.Value
-                
                 if currentVal ~= DropdownCurrentValue then
                     DropdownCurrentValue = currentVal
                     Runtime.Weapon = currentVal
@@ -143,17 +158,13 @@ local function StartAutoWeaponCheck()
     task.spawn(function()
         while task.wait(0.5) do
             if not WeaponDropdown then continue end
-
             local currentList = GetWeaponList()
             local currentCount = #currentList
 
             if currentCount ~= LastWeaponCount then
                 LastWeaponCount = currentCount
-                
                 if #currentList == 0 then currentList = {"No Weapons"} end
-                
                 WeaponDropdown:SetValues(currentList)
-                
                 if WeaponDropdown.Value == nil then
                     Runtime.Weapon = nil
                     DropdownCurrentValue = nil
@@ -192,9 +203,7 @@ end
 
 task.spawn(function()
     while task.wait(0.1) do
-        if Runtime.AutoEquip then
-            EquipWeapon()
-        end
+        if Runtime.AutoEquip then EquipWeapon() end
     end
 end)
 
@@ -251,11 +260,137 @@ task.spawn(function()
                 if Humans then
                     local myChar = Humans:FindFirstChild(LP.Name)
                     if myChar and not myChar:FindFirstChild("_HakiPart") then
-                        VIM:SendKeyEvent(true, Enum.KeyCode.H, false, game)
-                        task.wait(0.1)
-                        VIM:SendKeyEvent(false, Enum.KeyCode.H, false, game)
+                        local HakiRemote = RS:FindFirstChild("Remotes") and RS.Remotes:FindFirstChild("Events") and RS.Remotes.Events:FindFirstChild("HakiToggle")
+                        if HakiRemote then
+                            HakiRemote:FireServer(1)
+                        end
                     end
                 end
+            end
+        end
+    end
+end)
+
+local SkillRemote = RS:WaitForChild("Remotes"):WaitForChild("Events"):WaitForChild("Skill"):WaitForChild("SkillRequest")
+
+local function UseSkillZ()
+    local args = { 1, HRP().Position, "Startup" }
+    SkillRemote:FireServer(unpack(args))
+end
+local function UseSkillX()
+    local args = { 2, HRP().Position, "Startup" }
+    SkillRemote:FireServer(unpack(args))
+end
+local function UseSkillC()
+    local args = { 3, HRP().Position, "Startup" }
+    SkillRemote:FireServer(unpack(args))
+end
+local function UseSkillV()
+    local args = { 4, HRP().Position, "Action" }
+    SkillRemote:FireServer(unpack(args))
+end
+
+local function IsFarming()
+    return Runtime.AutoFarm or Runtime.AutoFarmBoss or Runtime.AutoFarmAllBoss or Runtime.AutoFarmSpawnBoss or Runtime.AutoFarmDungeon
+end
+
+local function IsNearTarget()
+    local myHRP = HRP()
+    if not myHRP then return false end
+    local myPos = myHRP.Position
+    local maxDist = 30
+
+    if Runtime.AutoFarmBoss or Runtime.AutoFarmAllBoss or Runtime.AutoFarmSpawnBoss then
+        local EnemyNPCs = workspace:FindFirstChild("Ignore") and workspace.Ignore:FindFirstChild("Characters") and workspace.Ignore.Characters:FindFirstChild("NPCs") and workspace.Ignore.Characters.NPCs:FindFirstChild("EnemyNPCs")
+        if EnemyNPCs then
+            for _, mob in ipairs(EnemyNPCs:GetChildren()) do
+                if mob:FindFirstChild("HumanoidRootPart") and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
+                    if (myPos - mob.HumanoidRootPart.Position).Magnitude < maxDist then
+                        return true
+                    end
+                end
+            end
+        end
+    end
+
+    if Runtime.AutoFarm then
+        local mobName = nil
+        local Data = workspace:FindFirstChild("_DataMirror")
+        if Data and Data:FindFirstChild(LP.Name) and Data[LP.Name]:FindFirstChild("Quests") then
+             local ActiveQuest = Data[LP.Name].Quests.Active
+             if ActiveQuest then
+                for _,q in ipairs(ActiveQuest:GetChildren()) do 
+                    mobName = q.Name 
+                    break 
+                end
+             end
+        end
+        
+        if mobName then
+            local EnemyFolder = workspace:FindFirstChild("Ignore") and workspace.Ignore:FindFirstChild("Characters") and workspace.Ignore.Characters:FindFirstChild("NPCs") and workspace.Ignore.Characters.NPCs:FindFirstChild("EnemyNPCs")
+            if EnemyFolder then
+                for _, mob in ipairs(EnemyFolder:GetChildren()) do
+                    if mob.Name == mobName and mob:FindFirstChild("HumanoidRootPart") and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
+                        if (myPos - mob.HumanoidRootPart.Position).Magnitude < maxDist then
+                            return true
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    if Runtime.AutoFarmDungeon then
+        local EnemyNPCs = workspace:FindFirstChild("Ignore") and workspace.Ignore:FindFirstChild("Characters") and workspace.Ignore.Characters:FindFirstChild("NPCs") and workspace.Ignore.Characters.NPCs:FindFirstChild("EnemyNPCs")
+        if EnemyNPCs then
+             for _, mob in ipairs(EnemyNPCs:GetChildren()) do
+                if mob:FindFirstChild("HumanoidRootPart") and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
+                    if (myPos - mob.HumanoidRootPart.Position).Magnitude < maxDist then
+                        return true
+                    end
+                end
+            end
+        end
+    end
+
+    return false
+end
+
+task.spawn(function()
+    while task.wait(Runtime.SkillDelay) do
+        if IsFarming() and IsNearTarget() then
+            if Runtime.AutoZ then UseSkillZ() end
+            if Runtime.AutoX then UseSkillX() end
+            if Runtime.AutoC then UseSkillC() end
+            if Runtime.AutoV then UseSkillV() end
+        end
+    end
+end)
+
+task.spawn(function()
+    while task.wait(1) do
+        if Runtime.AutoCreateDungeon then
+            if IsInDungeon() then continue end
+            
+            local MuzanNPC = workspace:FindFirstChild("Ignore") and workspace.Ignore:FindFirstChild("Characters") and workspace.Ignore.Characters:FindFirstChild("NPCs") and workspace.Ignore.Characters.NPCs:FindFirstChild("FriendlyNPCs") and workspace.Ignore.Characters.NPCs.FriendlyNPCs:FindFirstChild("Interaction") and workspace.Ignore.Characters.NPCs.FriendlyNPCs.Interaction:FindFirstChild("Conversation") and workspace.Ignore.Characters.NPCs.FriendlyNPCs.Interaction.Conversation:FindFirstChild("Muzan")
+            
+            if MuzanNPC and MuzanNPC:FindFirstChild("HumanoidRootPart") then
+                HRP().CFrame = MuzanNPC.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
+                task.wait(0.5)
+                
+                local args = {
+                    "InfinityCastle",
+                    MuzanNPC
+                }
+                local DialogueRemote = RS:FindFirstChild("Remotes") and RS.Remotes:FindFirstChild("Events") and RS.Remotes.Events:FindFirstChild("DialogueAction")
+                if DialogueRemote then
+                    DialogueRemote:FireServer(unpack(args))
+                end
+                
+                task.wait(2)
+            else
+                Fluent:Notify({Title = "Error", Content = "Muzan NPC not found!", Duration = 3})
+                Runtime.AutoCreateDungeon = false
             end
         end
     end
@@ -779,7 +914,7 @@ task.spawn(function()
     while task.wait(0.1) do
         if not Runtime.AutoOpenSukunaChest then continue end
 
-        local SukunaChest = workspace:FindFirstChild("Ignore") and workspace.Ignore:FindFirstChild("Chests") and workspace.Ignore.Chests:FindFirstChild("Sukuna")
+        local SukunaChest = workspace:FindFirstChild("Ignore") and workspace.Ignore.Chests:FindFirstChild("Sukuna")
         
         if not SukunaChest or not SukunaChest:IsA("Model") then
             task.wait(1)
@@ -800,6 +935,12 @@ task.spawn(function()
         task.wait(0.1)
     end
 end)
+
+AddBigTitle(Tabs.Skills, "Auto Skills")
+Tabs.Skills:AddToggle("Auto Z", { Title = "Auto Skill Z", Description = "" }):OnChanged(function(v) Runtime.AutoZ = v end)
+Tabs.Skills:AddToggle("Auto X", { Title = "Auto Skill X", Description = "" }):OnChanged(function(v) Runtime.AutoX = v end)
+Tabs.Skills:AddToggle("Auto C", { Title = "Auto Skill C", Description = "" }):OnChanged(function(v) Runtime.AutoC = v end)
+Tabs.Skills:AddToggle("Auto V", { Title = "Auto Skill V", Description = "" }):OnChanged(function(v) Runtime.AutoV = v end)
 
 Tabs.Main:AddToggle("Auto Farm", {
     Title = "Auto Farm",
@@ -876,6 +1017,11 @@ local StatDropdown = Tabs.Stats:AddDropdown("Stat Name", {
 }):OnChanged(function(v)
     if v ~= "No Stats" then Runtime.StatName = v end
 end)
+
+Tabs.Dungeon:AddToggle("Auto Create Dungeon", {
+    Title = "Auto Create Dungeon",
+    Description = ""
+}):OnChanged(function(v) Runtime.AutoCreateDungeon = v end)
 
 Tabs.Dungeon:AddToggle("Auto Farm Dungeon", {
     Title = "Auto Farm Dungeon",
