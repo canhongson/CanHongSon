@@ -1,0 +1,9 @@
+local Script = {
+    [9797806474] = "https://raw.githubusercontent.com/canhongson/CanHongSon/refs/heads/main/AnimeAstral",
+}
+
+local url = Script[game.GameId]
+
+if url then
+    loadstring(game:HttpGet(url))()
+end
