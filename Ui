@@ -1,17 +1,3 @@
---[[
-
-███████╗██╗░░░░░██╗░░░██╗███████╗███╗░░██╗████████╗  ██████╗░██╗░░░░░██╗░░░██╗░██████╗
-██╔════╝██║░░░░░██║░░░██║██╔════╝████╗░██║╚══██╔══╝  ██╔══██╗██║░░░░░██║░░░██║██╔════╝
-█████╗░░██║░░░░░██║░░░██║█████╗░░██╔██╗██║░░░██║░░░  ██████╔╝██║░░░░░██║░░░██║╚█████╗░
-██╔══╝░░██║░░░░░██║░░░██║██╔══╝░░██║╚████║░░░██║░░░  ██╔═══╝░██║░░░░░██║░░░██║░╚═══██╗
-██║░░░░░███████╗╚██████╔╝███████╗██║░╚███║░░░██║░░░  ██║░░░░░███████╗╚██████╔╝██████╔╝
-╚═╝░░░░░╚══════╝░╚═════╝░╚══════╝╚═╝░░╚══╝░░░╚═╝░░░  ╚═╝░░░░░╚══════╝░╚═════╝░╚═════╝░
-
-A modified version of Fluent
-https://fluent-pl.us
-
-]]
-
 local Lighting = game:GetService("Lighting")
 local RunService = game:GetService("RunService")
 local LocalPlayer = game:GetService("Players").LocalPlayer
@@ -5698,6 +5684,7 @@ ElementsTable.Dropdown = (function()
 
 		local SearchBar
 		local SearchBox
+		local RecalculateCanvasSize, RecalculateListSize, RecalculateListPosition -- khai báo trước để ô tìm kiếm gọi được
 		if Dropdown.Search then
 			SearchBar = New("Frame", {
 				Size = UDim2.new(1, -10, 0, 28),
@@ -5845,7 +5832,7 @@ ElementsTable.Dropdown = (function()
 			end
 		end
 
-		local function RecalculateListPosition()
+		function RecalculateListPosition()
 			if not DropdownHolderCanvas or not DropdownInner then return end
 			
 			local dropdownX = DropdownInner.AbsolutePosition.X
@@ -5987,7 +5974,7 @@ ElementsTable.Dropdown = (function()
 		end
 
 		local ListSizeX = 0
-		local function RecalculateListSize()
+		function RecalculateListSize()
 			if not DropdownHolderCanvas or not DropdownHolderFrame then return end
 			
 			local visibleCount = 0
@@ -6012,7 +5999,7 @@ ElementsTable.Dropdown = (function()
 			DropdownHolderFrame.Size = UDim2.fromScale(1, many and (targetHeight / math.max(targetHeight, 1)) or 1)
 		end
 
-		local function RecalculateCanvasSize()
+		function RecalculateCanvasSize()
 			DropdownScrollFrame.CanvasSize = UDim2.fromOffset(0, DropdownListLayout.AbsoluteContentSize.Y)
 		end
 
@@ -9949,6 +9936,30 @@ Library.CreateWindow = function(self, Config)
 
 
 
+
+	-- Bản gốc để phần demo/loader bật giao diện. Bản loader tự bật ngay khi tạo cửa sổ.
+	pcall(function() if Library.GUI then Library.GUI.ResetOnSpawn = false end end)
+	task.defer(function()
+		pcall(function() if Library.GUI then Library.GUI.Enabled = true end end)
+		pcall(function()
+			if Window.AcrylicPaint and Window.AcrylicPaint.Frame then
+				Window.AcrylicPaint.Frame.Visible = true
+			end
+		end)
+		pcall(function() if Window.BackgroundImage then Window.BackgroundImage.Visible = true end end)
+		if Library._AcrylicPending then
+			pcall(function()
+				Acrylic.init()
+				Library._AcrylicPending = false
+			end)
+		end
+		pcall(function()
+			if Library.Minimizer then Library.Minimizer.Visible = true end
+			if Library.MinimizerController and Library.MinimizerController.AnimateIsland then
+				Library.MinimizerController.AnimateIsland(true)
+			end
+		end)
+	end)
 
 	return Window
 
