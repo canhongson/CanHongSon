@@ -1,16 +1,4 @@
---[[
 
-███████╗██╗░░░░░██╗░░░██╗███████╗███╗░░██╗████████╗  ██████╗░██╗░░░░░██╗░░░██╗░██████╗
-██╔════╝██║░░░░░██║░░░██║██╔════╝████╗░██║╚══██╔══╝  ██╔══██╗██║░░░░░██║░░░██║██╔════╝
-█████╗░░██║░░░░░██║░░░██║█████╗░░██╔██╗██║░░░██║░░░  ██████╔╝██║░░░░░██║░░░██║╚█████╗░
-██╔══╝░░██║░░░░░██║░░░██║██╔══╝░░██║╚████║░░░██║░░░  ██╔═══╝░██║░░░░░██║░░░██║░╚═══██╗
-██║░░░░░███████╗╚██████╔╝███████╗██║░╚███║░░░██║░░░  ██║░░░░░███████╗╚██████╔╝██████╔╝
-╚═╝░░░░░╚══════╝░╚═════╝░╚══════╝╚═╝░░╚══╝░░░╚═╝░░░  ╚═╝░░░░░╚══════╝░╚═════╝░╚═════╝░
-
-A modified version of Fluent
-https://fluent-pl.us
-
-]]
 
 local Lighting = game:GetService("Lighting")
 local RunService = game:GetService("RunService")
@@ -9985,6 +9973,27 @@ Library.CreateWindow = function(self, Config)
 
 end
 
+-- Đánh dấu trạng thái tạo cửa sổ để phần khởi động (loader) không chộp phải Window còn dở dang
+do
+	local _rawCreateWindow = Library.CreateWindow
+	Library._CreatingWindow = false
+	Library._WindowReady = false
+	Library.CreateWindow = function(self, Config)
+		if Library.Window and not Library._CreatingWindow then
+			return _rawCreateWindow(self, Config)
+		end
+		Library._CreatingWindow = true
+		local ok, res = pcall(_rawCreateWindow, self, Config)
+		Library._CreatingWindow = false
+		if not ok then
+			error(res, 0)
+		end
+		Library._WindowReady = true
+		return res
+	end
+end
+
+
 
 
 
@@ -10897,6 +10906,7 @@ task.defer(function()
         shadow.ZIndex = 4
         shadow.Parent = holder
         Instance.new("UICorner", shadow).CornerRadius = UDim.new(0, 24)
+        shadow.Visible = false -- bỏ khung mờ phía sau loader
 
         -- ═══ CARD ═══
         local card = Instance.new("Frame")
@@ -11133,6 +11143,14 @@ task.defer(function()
         _G.NexusLoaderStart = tick()
         _G.NexusLoaderMinDuration = 8
         task.wait(0.12)
+    end
+
+    -- Nếu script người dùng đang dựng cửa sổ thì chờ nó xong (tránh dùng Window còn dở)
+    do
+        local _t0 = tick()
+        while Fluent._CreatingWindow and tick() - _t0 < 20 do
+            task.wait()
+        end
     end
 
         local Window = Fluent.Window or Fluent:CreateWindow({
@@ -12373,7 +12391,7 @@ end
 task.defer(function()
     -- 1. Chờ Window
     local t = 0
-    while (not Library.Window) and t < 10 do
+    while ((not Library.Window) or Library._CreatingWindow) and t < 10 do
         task.wait(0.1); t = t + 0.1
     end
     if not Library.Window then
