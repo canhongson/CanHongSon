@@ -1,4 +1,16 @@
+--[[
 
+███████╗██╗░░░░░██╗░░░██╗███████╗███╗░░██╗████████╗  ██████╗░██╗░░░░░██╗░░░██╗░██████╗
+██╔════╝██║░░░░░██║░░░██║██╔════╝████╗░██║╚══██╔══╝  ██╔══██╗██║░░░░░██║░░░██║██╔════╝
+█████╗░░██║░░░░░██║░░░██║█████╗░░██╔██╗██║░░░██║░░░  ██████╔╝██║░░░░░██║░░░██║╚█████╗░
+██╔══╝░░██║░░░░░██║░░░██║██╔══╝░░██║╚████║░░░██║░░░  ██╔═══╝░██║░░░░░██║░░░██║░╚═══██╗
+██║░░░░░███████╗╚██████╔╝███████╗██║░╚███║░░░██║░░░  ██║░░░░░███████╗╚██████╔╝██████╔╝
+╚═╝░░░░░╚══════╝░╚═════╝░╚══════╝╚═╝░░╚══╝░░░╚═╝░░░  ╚═╝░░░░░╚══════╝░╚═════╝░╚═════╝░
+
+A modified version of Fluent
+https://fluent-pl.us
+
+]]
 
 local Lighting = game:GetService("Lighting")
 local RunService = game:GetService("RunService")
@@ -4486,11 +4498,19 @@ Components.Window = (function()
 			ScrollBarImageTransparency = 1,
 			ScrollBarThickness = 0,
 			BorderSizePixel = 0,
-			CanvasSize = UDim2.fromScale(0, 0),
+			CanvasSize = UDim2.new(0, 0, 0, 0),
+			AutomaticCanvasSize = Enum.AutomaticSize.Y,
 			ScrollingDirection = Enum.ScrollingDirection.Y,
+			ScrollingEnabled = true,
+			ClipsDescendants = true,
 		}, {
+			New("UIPadding", {
+				PaddingTop = UDim.new(0, 2),
+				PaddingBottom = UDim.new(0, 6),
+			}),
 			New("UIListLayout", {
-				Padding = UDim.new(0, 4),
+				Padding = UDim.new(0, 5),
+				SortOrder = Enum.SortOrder.LayoutOrder,
 			}),
 		})
 
@@ -5168,17 +5188,6 @@ Components.Window = (function()
 			end
 		end)
 
-		Creator.AddSignal(Window.TabHolder.UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"), function()
-			if Window.TabHolder and Window.TabHolder.UIListLayout then
-				local padding = Window.TabHolder:FindFirstChild("UIPadding")
-				local paddingTop = padding and padding.PaddingTop.Offset or 6
-				local paddingBottom = padding and padding.PaddingBottom.Offset or 6
-				local contentSize = Window.TabHolder.UIListLayout.AbsoluteContentSize.Y + paddingTop + paddingBottom
-				if contentSize > 0 then
-					Window.TabHolder.CanvasSize = UDim2.new(0, 0, 0, contentSize)
-				end
-			end
-		end)
 
 		-- UI minimize/restore is controlled only by the Dynamic Island.
 
@@ -5480,17 +5489,18 @@ Components.Window = (function()
 
 			local pad = holder:FindFirstChildOfClass("UIPadding")
 			local padY = pad and (pad.PaddingTop.Offset + pad.PaddingBottom.Offset) or 0
-			local gap = 4
-			local normalHeight = 34
-			local usable = math.max(40, avail - padY - 2)
+			local gap = 5
+			local minHeight = 42
+			local maxHeight = 60
+			local usable = math.max(1, avail - padY)
+			local fitHeight = math.floor((usable - ((n - 1) * gap)) / n)
 
-			-- Few tabs: use the empty vertical space instead of leaving a huge blank area.
-			-- Many tabs: NEVER shrink the buttons into tiny labels; keep the normal size
-			-- and let the existing sidebar scroll so every tab remains accessible.
-			local h = normalHeight
-			local fillHeight = math.floor((usable - ((n - 1) * gap)) / n)
-			if fillHeight > normalHeight then
-				h = math.min(fillHeight, 60)
+			-- Keep tabs large. When there is spare room, expand each tab to use it.
+			-- When there are too many tabs, do NOT shrink them: the sidebar becomes
+			-- vertically scrollable so every tab remains reachable at the same size.
+			local h = math.clamp(fitHeight, minHeight, maxHeight)
+			if fitHeight < minHeight then
+				h = minHeight
 			end
 
 			layout.Padding = UDim.new(0, gap)
@@ -5502,7 +5512,11 @@ Components.Window = (function()
 			end
 
 			Window.TabInset = math.floor(h / 2) - 1
-			task.delay(0.03, function()
+			task.defer(function()
+				if holder and holder.Parent then
+					local content = layout.AbsoluteContentSize.Y + padY
+					holder.CanvasSize = UDim2.new(0, 0, 0, math.max(holder.AbsoluteSize.Y, content))
+				end
 				pcall(function()
 					if TabModule.SelectedTab > 0 and TabModule.Tabs[TabModule.SelectedTab] then
 						Window.SelectorPosMotor:setGoal(Instant(TabModule:GetCurrentTabPos()))
@@ -9889,36 +9903,16 @@ local InterfaceManager = {} do
 
 
 
-		section:AddSlider("WindowTransparency", {
-
-
-			Title = "Window Transparency",
-
-
-			Description = "Adjusts the window transparency.",
-
-
-			Default = 1,
-
-
-			Min = 0,
-
-
-			Max = 3,
-
-
-			Rounding = 1,
-
-
+		section:AddToggle("WindowTransparencyToggle", {
+			Title = "Transparency",
+			Description = "Toggle Scarlet Ui transparency.",
+			Default = Library.Transparency ~= false,
 			Callback = function(Value)
-
-
-				Library:SetWindowTransparency(Value)
-
-
+				Library.Transparency = Value == true
+				if Library.ToggleTransparency then
+					Library:ToggleTransparency(Value == true)
+				end
 			end
-
-
 		})
 
 
@@ -10810,17 +10804,16 @@ end
 
 
 function Library:ToggleTransparency(Value)
+	-- Restored from the original Scarlet/Fluent transparency implementation.
+	-- Toggle only changes the real Acrylic background layer; it does not use a slider.
+	Library.Transparency = Value == true
 
-
-	if Library.Window then
-
-
-		Library.Window.AcrylicPaint.Frame.Background.BackgroundTransparency = Value and 0.35 or 0
-
-
+	if Library.Window and Library.Window.AcrylicPaint and Library.Window.AcrylicPaint.Frame then
+		local background = Library.Window.AcrylicPaint.Frame:FindFirstChild("Background")
+		if background then
+			background.BackgroundTransparency = Value and 0.35 or 0
+		end
 	end
-
-
 end
 
 
@@ -11657,15 +11650,14 @@ task.defer(function()
         end
     })
 
-    SettingsSection:AddSlider("WindowTransparency", {
+    SettingsSection:AddToggle("ScarletTransparencyToggle", {
         Title = "Transparency",
-        Description = "Adjust the window transparency.",
-        Default = 1,
-        Min = 0,
-        Max = 3,
-        Rounding = 1,
+        Description = "Toggle Scarlet Ui transparency.",
+        Default = Fluent.Transparency ~= false,
         Callback = function(Value)
-            pcall(function() Fluent:SetWindowTransparency(Value) end)
+            local enabled = Value == true
+            Fluent.Transparency = enabled
+            pcall(function() Fluent:ToggleTransparency(enabled) end)
         end
     })
 
