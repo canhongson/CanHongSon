@@ -1,4 +1,16 @@
+--[[
 
+███████╗██╗░░░░░██╗░░░██╗███████╗███╗░░██╗████████╗  ██████╗░██╗░░░░░██╗░░░██╗░██████╗
+██╔════╝██║░░░░░██║░░░██║██╔════╝████╗░██║╚══██╔══╝  ██╔══██╗██║░░░░░██║░░░██║██╔════╝
+█████╗░░██║░░░░░██║░░░██║█████╗░░██╔██╗██║░░░██║░░░  ██████╔╝██║░░░░░██║░░░██║╚█████╗░
+██╔══╝░░██║░░░░░██║░░░██║██╔══╝░░██║╚████║░░░██║░░░  ██╔═══╝░██║░░░░░██║░░░██║░╚═══██╗
+██║░░░░░███████╗╚██████╔╝███████╗██║░╚███║░░░██║░░░  ██║░░░░░███████╗╚██████╔╝██████╔╝
+╚═╝░░░░░╚══════╝░╚═════╝░╚══════╝╚═╝░░╚══╝░░░╚═╝░░░  ╚═╝░░░░░╚══════╝░╚═════╝░╚═════╝░
+
+A modified version of Fluent
+https://fluent-pl.us
+
+]]
 
 local Lighting = game:GetService("Lighting")
 local RunService = game:GetService("RunService")
@@ -2744,6 +2756,7 @@ Components.Tab = (function()
 			BorderSizePixel = 0,
 			CanvasSize = UDim2.fromScale(0, 0),
 			ScrollingDirection = Enum.ScrollingDirection.Y,
+			ScrollingEnabled = false,
 			ScrollingEnabled = true,
 		}, {
 			ContainerLayout,
@@ -4900,7 +4913,7 @@ Components.Window = (function()
 		local LastTime = 0
 		Window.SelectorPosMotor:onStep(function(Value)
 			local base = Window.TabHolderTop or 45
-			local verticalInset = 16
+			local verticalInset = Window.TabInset or 16
 			local selectorY = base + Value + verticalInset
 
 			local searchOffset = Window.HasImage and (Window.ImageSize + Window.TopOffset + 10) or Window.TopOffset
@@ -5064,6 +5077,7 @@ Components.Window = (function()
 			then
 				Resizing = true
 				ResizePos = Input.Position
+				ResizeStartSize = Vector2.new(Window.Size.X.Offset, Window.Size.Y.Offset)
 			end
 		end)
 
@@ -5091,11 +5105,12 @@ Components.Window = (function()
 				and Resizing
 			then
 				local Delta = Input.Position - ResizePos
-				local StartSize = Window.Size
+				local StartSize = ResizeStartSize or Vector2.new(Window.Size.X.Offset, Window.Size.Y.Offset)
 
-				local TargetSize = Vector3.new(StartSize.X.Offset, StartSize.Y.Offset, 0) + Vector3.new(1, 1, 0) * Delta
-				local TargetSizeClamped =
-					Vector2.new(math.clamp(TargetSize.X, 470, 2048), math.clamp(TargetSize.Y, 380, 2048))
+				local TargetSizeClamped = Vector2.new(
+					math.clamp(StartSize.X + Delta.X, 470, 2048),
+					math.clamp(StartSize.Y + Delta.Y, 380, 2048)
+				)
 
 				SizeMotor:setGoal({
 					X = Flipper.Instant.new(TargetSizeClamped.X),
@@ -5108,6 +5123,7 @@ Components.Window = (function()
 			if Resizing == true then
 				Resizing = false
 				Window.Size = UDim2.fromOffset(SizeMotor:getValue().X, SizeMotor:getValue().Y)
+				ResizeStartSize = nil
 				if Window.UpdateTabHolderLayout then Window:UpdateTabHolderLayout() end
 			end
 			if Dragging and (Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch) then
@@ -5403,6 +5419,9 @@ Components.Window = (function()
 		Window.TabModule = TabModule
 		function Window:AddTab(TabConfig)
 			local tab = TabModule:New(TabConfig.Title, TabConfig.Icon, Window.TabHolder)
+			task.defer(function()
+				if Window.FitTabs then Window:FitTabs() end
+			end)
 			return tab
 		end
 
@@ -5414,6 +5433,104 @@ Components.Window = (function()
 			LastValue = TabModule:GetCurrentTabPos() + 16
 			LastTime = 0
 			Window.SelectorPosMotor:setGoal(Instant(TabModule:GetCurrentTabPos()))
+		end)
+
+		-- ── Hiện đủ mọi tab trong sidebar: tự co chiều cao nút tab cho vừa khung ──
+		function Window:FitTabs()
+			local holder = Window.TabHolder
+			local layout = holder and holder:FindFirstChildOfClass("UIListLayout")
+			local n = TabModule.TabCount
+			if not layout or n <= 0 then return end
+			local avail = holder.AbsoluteSize.Y
+			if avail <= 0 then return end -- GUI đang ẩn, sẽ tính lại khi hiện
+			local pad = holder:FindFirstChildOfClass("UIPadding")
+			local usable = avail - (pad and (pad.PaddingTop.Offset + pad.PaddingBottom.Offset) or 0) - 2
+			local gap, h = 4, 34
+			if n * 34 + (n - 1) * 4 > usable then
+				gap = n >= 14 and 2 or 3
+				h = math.clamp(math.floor((usable - (n - 1) * gap) / n), 18, 34)
+			end
+			layout.Padding = UDim.new(0, gap)
+			for i = 1, n do
+				local t = TabModule.Tabs[i]
+				if t and t.Frame then t.Frame.Size = UDim2.new(1, 0, 0, h) end
+			end
+			Window.TabInset = math.floor(h / 2) - 1
+			task.delay(0.06, function()
+				pcall(function()
+					if TabModule.SelectedTab > 0 and TabModule.Tabs[TabModule.SelectedTab] then
+						Window.SelectorPosMotor:setGoal(Instant(TabModule:GetCurrentTabPos()))
+					end
+				end)
+			end)
+		end
+		Creator.AddSignal(Window.TabHolder:GetPropertyChangedSignal("AbsoluteSize"), function()
+			Window:FitTabs()
+		end)
+
+		-- ── Thanh kéo ra/vào để phóng to / thu nhỏ sidebar ──
+		local SidebarHandle = New("TextButton", {
+			Name = "SidebarResize",
+			Text = "",
+			AutoButtonColor = false,
+			BackgroundTransparency = 1,
+			Size = UDim2.new(0, 12, 1, -100),
+			Position = UDim2.fromOffset(Window.TabWidth + 12, 50),
+			ZIndex = 30,
+			Parent = Window.Root,
+		}, {
+			New("Frame", {
+				Name = "Grip",
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				Position = UDim2.fromScale(0.5, 0.5),
+				Size = UDim2.fromOffset(2, 34),
+				BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+				BackgroundTransparency = 0.88,
+				ZIndex = 31,
+			}, {
+				New("UICorner", { CornerRadius = UDim.new(1, 0) }),
+			}),
+		})
+		local SidebarGrip = SidebarHandle.Grip
+		local function GripGlow(t)
+			game:GetService("TweenService"):Create(SidebarGrip, TweenInfo.new(0.15), { BackgroundTransparency = t }):Play()
+		end
+		function Window:SetTabWidth(w)
+			local rootW = Window.Root and Window.Root.AbsoluteSize.X or 640
+			local maxW = math.max(120, math.floor(rootW * 0.45))
+			w = math.clamp(math.floor(tonumber(w) or Window.TabWidth), 100, maxW)
+			Window.TabWidth = w
+			TabFrame.Size = UDim2.new(0, w, TabFrame.Size.Y.Scale, TabFrame.Size.Y.Offset)
+			Window.TabDisplay.Position = UDim2.fromOffset(w + 26, 56)
+			Window.ContainerCanvas.Size = UDim2.new(1, -w - 32, 1, -102)
+			Window.ContainerCanvas.Position = UDim2.fromOffset(w + 26, 90)
+			SidebarHandle.Position = UDim2.fromOffset(w + 12, 50)
+		end
+		local sbDragging, sbStartX, sbStartW = false, 0, 0
+		Creator.AddSignal(SidebarHandle.MouseEnter, function() GripGlow(0.6) end)
+		Creator.AddSignal(SidebarHandle.MouseLeave, function()
+			if not sbDragging then GripGlow(0.88) end
+		end)
+		Creator.AddSignal(SidebarHandle.InputBegan, function(Input)
+			if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
+				sbDragging, sbStartX, sbStartW = true, Input.Position.X, Window.TabWidth
+				GripGlow(0.35)
+			end
+		end)
+		Creator.AddSignal(UserInputService.InputChanged, function(Input)
+			if sbDragging and (Input.UserInputType == Enum.UserInputType.MouseMovement or Input.UserInputType == Enum.UserInputType.Touch) then
+				Window:SetTabWidth(sbStartW + (Input.Position.X - sbStartX))
+			end
+		end)
+		Creator.AddSignal(UserInputService.InputEnded, function(Input)
+			if sbDragging and (Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch) then
+				sbDragging = false
+				GripGlow(0.88)
+				pcall(function()
+					local as = getgenv and getgenv().ScarletAutoSave
+					if as and as.MarkDirty then as:MarkDirty() end
+				end)
+			end
 		end)
 
 
@@ -9983,12 +10100,14 @@ do
 			return _rawCreateWindow(self, Config)
 		end
 		Library._CreatingWindow = true
+		Config = Config or {}
 		local ok, res = pcall(_rawCreateWindow, self, Config)
 		Library._CreatingWindow = false
 		if not ok then
 			error(res, 0)
 		end
 		Library._WindowReady = true
+		Library.WindowConfig = Config
 		return res
 	end
 end
@@ -10807,6 +10926,12 @@ end
 
 task.defer(function()
     local Fluent = Library
+    -- Chờ script người dùng dựng xong cửa sổ rồi mới đọc cấu hình
+    do
+        local _t0 = tick()
+        while Fluent._CreatingWindow and tick() - _t0 < 20 do task.wait() end
+    end
+    local function WC() return Fluent.WindowConfig or {} end
     -- Keep content containers stable. Button hover/selection animations remain,
     -- but panels themselves switch instantly to avoid visibility flicker.
     Fluent.StableContentLayout = false
@@ -10863,6 +10988,11 @@ task.defer(function()
     -- MODERN DYNAMIC PRELOADER — không glow, không khung mờ
     -- ================================================================
     local NexusLoader = {}
+    if WC().LoadUI == false then
+        function NexusLoader:Set() end
+        function NexusLoader:Close() end
+        _G.NexusLoaderMinDuration = 0
+    else
     do
         local CoreGui = game:GetService("CoreGui")
         local TweenService = game:GetService("TweenService")
@@ -11141,8 +11271,9 @@ task.defer(function()
 
         NexusLoader:Set("", 0.10)
         _G.NexusLoaderStart = tick()
-        _G.NexusLoaderMinDuration = 8
+        _G.NexusLoaderMinDuration = tonumber(WC().LoadTime) or 8
         task.wait(0.12)
+    end
     end
 
     -- Nếu script người dùng đang dựng cửa sổ thì chờ nó xong (tránh dùng Window còn dở)
@@ -11189,48 +11320,6 @@ task.defer(function()
         end
     end)
     task.wait(0.02)
-
-    -- Real window scaling: resize the root itself while keeping its top-left position.
-    local ScaleBaseSize = Vector2.new(Window.Size.X.Offset, Window.Size.Y.Offset)
-    local CurrentScaleSetting = 10
-    local function ScaleFromSetting(value)
-        value = math.clamp(tonumber(value) or 10, 1, 10)
-        return 0.62 + ((value - 1) / 9) * 0.38
-    end
-    local function ApplyUIScale(value, animate)
-        local target = ScaleFromSetting(value)
-        CurrentScaleSetting = math.clamp(tonumber(value) or 10, 1, 10)
-        -- Cho AutoSave đọc được giá trị scale hiện tại
-        if getgenv then getgenv()._ScarletCurrentScale = CurrentScaleSetting end
-        local targetW = math.floor(ScaleBaseSize.X * target + 0.5)
-        local targetH = math.floor(ScaleBaseSize.Y * target + 0.5)
-        local keepPos = Window.Position
-        Window.Size = UDim2.fromOffset(targetW, targetH)
-        if Window.SizeMotor then
-            if animate then
-                Window.SizeMotor:setGoal({
-                    X = Flipper.Spring.new(targetW, { frequency = 4.9, dampingRatio = 0.95 }),
-                    Y = Flipper.Spring.new(targetH, { frequency = 4.9, dampingRatio = 0.95 }),
-                })
-            else
-                Window.SizeMotor:setGoal({
-                    X = Flipper.Instant.new(targetW),
-                    Y = Flipper.Instant.new(targetH),
-                })
-            end
-        else
-            Window.Root.Size = UDim2.fromOffset(targetW, targetH)
-        end
-        Window.Position = keepPos
-        if Window.PosMotor then
-            Window.PosMotor:setGoal({
-                X = Flipper.Instant.new(keepPos.X.Offset),
-                Y = Flipper.Instant.new(keepPos.Y.Offset),
-            })
-        else
-            Window.Root.Position = keepPos
-        end
-    end
 
     -- ================================================================
     -- LIQUID GLASS ENGINE 2.0
@@ -11498,7 +11587,7 @@ task.defer(function()
     end
 
     CreateLiquidGlass()
-    LiquidGlass.SetEnabled(true)
+    LiquidGlass.SetEnabled(WC().Glass ~= false)
 
     -- (Đã bỏ các tab test: Test Lab / Motion / Visuals / Diagnostics)
     local SettingsTab = Window:AddTab({Title = "Settings", Icon = "settings-2"})
@@ -11557,7 +11646,7 @@ task.defer(function()
     AppearanceSection:AddToggle("ScarletGlassEnabled", {
         Title = "Transparency",
         Description = "Enable or disable Transparency.",
-        Default = true,
+        Default = WC().Glass ~= false,
         Callback = function(Value)
             State.GlassEnabled = Value == true
             if InterfaceReady then
@@ -11569,18 +11658,6 @@ task.defer(function()
     })
 
     
-    AppearanceSection:AddSlider("ScarletUiScale", {
-        Title = "UI scale",
-        Description = "Scale the interface from 1 to 10.",
-        Min = 1, Max = 10, Default = 10, Rounding = 1,
-        Callback = function(Value)
-            local target = ScaleFromSetting(Value)
-            pcall(function()
-                ApplyUIScale(Value, true)
-            end)
-        end
-    })
-
     local BehaviorSection = SettingsBehavior:AddSection("BEHAVIOR", "sliders")
     BehaviorSection:AddToggle("VantaLockWindow", {
         Title = "Lock window position",
@@ -11628,18 +11705,17 @@ task.defer(function()
     })
 
     State.Glass = 100
-    State.GlassEnabled = true
-    State.Notifications = true
-    State.DragLocked = false
-    State.ReduceMotion = false
-    Fluent.NotificationsEnabled = true
+    State.GlassEnabled = WC().Glass ~= false
+    State.Notifications = WC().Notifications ~= false
+    State.DragLocked = WC().DragLocked == true
+    State.ReduceMotion = WC().ReduceMotion == true
+    Fluent.NotificationsEnabled = WC().Notifications ~= false
     if Fluent.Window then
-        Fluent.Window.DragLocked = false
-        Fluent.Window.ReduceMotion = false
+        Fluent.Window.DragLocked = WC().DragLocked == true
+        Fluent.Window.ReduceMotion = WC().ReduceMotion == true
     end
-    ApplyUIScale(10, false)
         pcall(function()
-        LiquidGlass.SetEnabled(true)
+        LiquidGlass.SetEnabled(State.GlassEnabled == true)
         LiquidGlass.SetIntensity(100)
         LiquidGlass.SetSpeed(1.65)
         if Window.SetBackgroundImageTransparency then
@@ -12198,6 +12274,16 @@ task.defer(function()
         pcall(function() Fluent.Window:Minimize() end)
     end
     InterfaceReady = true
+    do
+        local _key = WC().MinimizeKey
+        if typeof(_key) == "EnumItem" and _key ~= Enum.KeyCode.Unknown then
+            game:GetService("UserInputService").InputBegan:Connect(function(input, gp)
+                if not gp and input.KeyCode == _key then
+                    pcall(function() Fluent.Window:Minimize() end)
+                end
+            end)
+        end
+    end
 
     -- FIX: Reload glass layer once after UI is fully expanded so all tweens
     -- and transparencies start from a clean state (prevents initial flicker).
@@ -12220,12 +12306,14 @@ task.defer(function()
     -- No per-frame UI text updates. Constant SetDesc calls can trigger layout
     -- recalculation in some executors and make rows appear to blink.
      
+    if WC().ReadyNotify ~= false then
     Fluent:Notify({
-        Title = "SCARLET UI // READY",
-        Content = "Scarlet Ui initialized.",
+        Title = WC().ReadyTitle or "SCARLET UI // READY",
+        Content = WC().ReadyContent or "Scarlet Ui initialized.",
         SubContent = "Use the tabs and Settings to test the interface.",
         Duration = 4
     })
+    end
 end)
 -- ════════════════════════════════════════════════════════════════
 -- SCARLET UI AUTO-SAVE v3 — bản fix triệt để
@@ -12273,6 +12361,7 @@ do
         if Library.Window then
             meta.windowPos  = { Library.Window.Position.X.Offset, Library.Window.Position.Y.Offset }
             meta.windowSize = { Library.Window.Size.X.Offset,     Library.Window.Size.Y.Offset }
+            meta.tabWidth   = Library.Window.TabWidth
         end
         local ok2 = pcall(function()
             writefile(AutoSave.MetaFile, HttpService:JSONEncode(meta))
@@ -12316,6 +12405,9 @@ do
                             })
                         end
                     end
+                end
+                if meta.tabWidth and Library.Window.SetTabWidth then
+                    pcall(function() Library.Window:SetTabWidth(tonumber(meta.tabWidth)) end)
                 end
                 if meta.windowSize then
                     local w, h = tonumber(meta.windowSize[1]), tonumber(meta.windowSize[2])
@@ -12399,6 +12491,10 @@ task.defer(function()
         return
     end
 
+    if (Library.WindowConfig or {}).AutoSave == false then
+        AutoSave.Enabled = false
+        return
+    end
     -- 2. Chờ Library.Options có ít nhất 5 item (UI build xong)
     t = 0
     while t < 8 do
