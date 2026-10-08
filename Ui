@@ -39,17 +39,17 @@ local ProtectGui = protectgui or (syn and syn.protect_gui) or function() end
 local Themes = {
 	Names = {
 		"Dark",
-		"Darker",
+		"Darker", 
 		"AMOLED",
 		"Light",
 		"Balloon",
 		"SoftCream",
-		"Aqua",
+		"Aqua", 
 		"Amethyst",
 		"Rose",
 		"Midnight",
 		"Forest",
-		"Sunset",
+		"Sunset", 
 		"Ocean",
 		"Emerald",
 		"Sapphire",
@@ -927,6 +927,7 @@ end
 
 function Spring:step(state, dt)
 
+
 	local d = self._dampingRatio
 	local f = self._frequency * 2 * math.pi
 	local g = self._targetValue
@@ -947,6 +948,8 @@ function Spring:step(state, dt)
 		local i = math.cos(f * c * dt)
 		local j = math.sin(f * c * dt)
 
+
+
 		local z
 		if c > EPS then
 			z = j / c
@@ -954,6 +957,8 @@ function Spring:step(state, dt)
 			local a = dt * f
 			z = a + ((a * a) * (c * c) * (c * c) / 20 - c * c) * (a * a * a) / 6
 		end
+
+
 
 		local y
 		if f * c > EPS then
@@ -1394,24 +1399,24 @@ local function MiniMessageToRichText(text)
 	if type(text) ~= "string" or text == "" then
 		return text
 	end
-
+	
 	if not text:match("<[^>]+>") then
 		return text
 	end
-
+	
 	local result = text
 	result = result:gsub("<br>", "\n")
 	result = result:gsub("<br/>", "\n")
 	result = result:gsub("<br />", "\n")
 	result = result:gsub("<nl>", "\n")
 	result = result:gsub("<newline>", "\n")
-
+	
 	result = result:gsub("<reset>", "</font></b></i></u></s>")
-
+	
 	result = result:gsub("<obfuscated>(.-)</obfuscated>", "%1")
 	result = result:gsub("<obfuscated>", "")
 	result = result:gsub("</obfuscated>", "")
-
+	
 	local function hexToRgb(hex)
 		hex = hex:gsub("#", "")
 		local r = tonumber("0x" .. hex:sub(1, 2))
@@ -1419,11 +1424,11 @@ local function MiniMessageToRichText(text)
 		local b = tonumber("0x" .. hex:sub(5, 6))
 		return r, g, b
 	end
-
+	
 	local function rgbToHex(r, g, b)
 		return string.format("#%02X%02X%02X", math.floor(r), math.floor(g), math.floor(b))
 	end
-
+	
 	local function interpolateColor(color1Hex, color2Hex, t)
 		local r1, g1, b1 = hexToRgb(color1Hex)
 		local r2, g2, b2 = hexToRgb(color2Hex)
@@ -1432,21 +1437,21 @@ local function MiniMessageToRichText(text)
 		local b = b1 + (b2 - b1) * t
 		return rgbToHex(r, g, b)
 	end
-
+	
 	for i = 1, 10 do
 		local newResult = result:gsub("<gradient:([^>]+)>(.-)</gradient>", function(colorsStr, content)
 			local colors = {}
-
+			
 			for colorMatch in colorsStr:gmatch("(#%x%x%x%x%x%x)") do
 				table.insert(colors, colorMatch)
 			end
-
+			
 			if #colors == 0 then
 				for colorMatch in colorsStr:gmatch("(%x%x%x%x%x%x)") do
 					table.insert(colors, "#" .. colorMatch)
 				end
 			end
-
+			
 			if #colors < 2 then
 				if #colors == 1 then
 					return '<font color="' .. colors[1] .. '">' .. content .. '</font>'
@@ -1454,22 +1459,22 @@ local function MiniMessageToRichText(text)
 					return content
 				end
 			end
-
+			
 			local cleanText = content:gsub("<[^>]+>", "")
 			local textLength = #cleanText
-
+			
 			if textLength == 0 then
 				return content
 			end
-
+			
 			if textLength == 1 then
 				return '<font color="' .. colors[1] .. '">' .. content .. '</font>'
 			end
-
+			
 			local parts = {}
 			local pos = 1
 			local charIndex = 0
-
+			
 			while pos <= #content do
 				if content:sub(pos, pos) == "<" then
 					local tagEnd = content:find(">", pos)
@@ -1489,50 +1494,50 @@ local function MiniMessageToRichText(text)
 					pos = pos + 1
 				end
 			end
-
+			
 			local function getGradientColor(t)
 				t = math.max(0, math.min(1, t))
-
+				
 				if #colors == 2 then
 					return interpolateColor(colors[1], colors[2], t)
 				end
-
+				
 				local numSegments = #colors - 1
 				local segmentSize = 1 / numSegments
-
+				
 				local segmentIndex = math.floor(t / segmentSize)
 				if segmentIndex >= numSegments then
 					segmentIndex = numSegments - 1
 					t = 1.0
 				end
-
+				
 				local segmentStart = segmentIndex * segmentSize
 				local segmentEnd = (segmentIndex + 1) * segmentSize
-
+				
 				local segmentT = 0
 				if segmentEnd > segmentStart then
 					segmentT = (t - segmentStart) / (segmentEnd - segmentStart)
 				else
 					segmentT = (t >= segmentEnd) and 1.0 or 0.0
 				end
-
+				
 				segmentT = math.max(0, math.min(1, segmentT))
-
+				
 				local color1Index = segmentIndex + 1
 				local color2Index = segmentIndex + 2
-
+				
 				if color1Index < 1 then color1Index = 1 end
 				if color2Index > #colors then color2Index = #colors end
 				if color1Index > #colors then color1Index = #colors end
-
+				
 				return interpolateColor(colors[color1Index], colors[color2Index], segmentT)
 			end
-
+			
 			local gradientText = ""
 			local currentSegment = ""
 			local currentColor = nil
 			local segments = {}
-
+			
 			for _, part in ipairs(parts) do
 				if part.type == "tag" then
 					if currentSegment ~= "" and currentColor ~= nil then
@@ -1545,7 +1550,7 @@ local function MiniMessageToRichText(text)
 					local t = part.index / (textLength - 1)
 					if textLength == 1 then t = 0 end
 					local charColor = getGradientColor(t)
-
+					
 					if currentColor == charColor then
 						currentSegment = currentSegment .. part.value
 					else
@@ -1557,11 +1562,11 @@ local function MiniMessageToRichText(text)
 					end
 				end
 			end
-
+			
 			if currentSegment ~= "" and currentColor ~= nil then
 				table.insert(segments, {text = currentSegment, color = currentColor})
 			end
-
+			
 			local hasTextSegments = false
 			for _, segment in ipairs(segments) do
 				if segment.text and segment.text ~= "" then
@@ -1569,7 +1574,7 @@ local function MiniMessageToRichText(text)
 					break
 				end
 			end
-
+			
 			if not hasTextSegments and textLength > 0 then
 				local fallbackText = ""
 				for i = 1, textLength do
@@ -1581,7 +1586,7 @@ local function MiniMessageToRichText(text)
 				end
 				return fallbackText
 			end
-
+			
 			for _, segment in ipairs(segments) do
 				if segment.color and segment.text and segment.text ~= "" then
 					gradientText = gradientText .. '<font color="' .. segment.color .. '">' .. segment.text .. '</font>'
@@ -1589,7 +1594,7 @@ local function MiniMessageToRichText(text)
 					gradientText = gradientText .. segment.text
 				end
 			end
-
+			
 			if gradientText == "" or gradientText == nil or not gradientText:match('<font color=') then
 				local fallbackText = ""
 				for i = 1, textLength do
@@ -1601,7 +1606,7 @@ local function MiniMessageToRichText(text)
 				end
 				return fallbackText
 			end
-
+			
 			return gradientText
 		end)
 		if newResult == result then
@@ -1609,7 +1614,7 @@ local function MiniMessageToRichText(text)
 		end
 		result = newResult
 	end
-
+	
 	result = result:gsub("<color:(#%x%x%x%x%x%x)>(.-)</color>", '<font color="%1">%2</font>')
 	result = result:gsub("<color:(#%x%x%x%x%x%x)>", '<font color="%1">')
 	result = result:gsub("<color:(%x%x%x%x%x%x)>(.-)</color>", function(hex, content)
@@ -1619,54 +1624,54 @@ local function MiniMessageToRichText(text)
 		return '<font color="#' .. hex .. '">'
 	end)
 	result = result:gsub("</color>", "</font>")
-
+	
 	result = result:gsub("<(#%x%x%x%x%x%x)>(.-)</#%x%x%x%x%x%x>", '<font color="%1">%2</font>')
 	result = result:gsub("<(#%x%x%x%x%x%x)>", '<font color="%1">')
 	result = result:gsub("</(#%x%x%x%x%x%x)>", "</font>")
-
+	
 	local colorNames = {}
 	for colorName, _ in pairs(MiniMessageColors) do
 		table.insert(colorNames, colorName)
 	end
 	table.sort(colorNames, function(a, b) return #a > #b end)
-
+	
 	for _, colorName in ipairs(colorNames) do
 		local hexColor = MiniMessageColors[colorName]
 		result = result:gsub("<" .. colorName .. ">(.-)</" .. colorName .. ">", '<font color="' .. hexColor .. '">%1</font>')
 		result = result:gsub("<" .. colorName .. ">", '<font color="' .. hexColor .. '">')
 		result = result:gsub("</" .. colorName .. ">", "</font>")
 	end
-
+	
 	result = result:gsub("<bold>(.-)</bold>", "<b>%1</b>")
 	result = result:gsub("<bold>", "<b>")
 	result = result:gsub("</bold>", "</b>")
-
+	
 	result = result:gsub("<italic>(.-)</italic>", "<i>%1</i>")
 	result = result:gsub("<italic>", "<i>")
 	result = result:gsub("</italic>", "</i>")
-
+	
 	result = result:gsub("<underline>(.-)</underline>", "<u>%1</u>")
 	result = result:gsub("<underlined>(.-)</underlined>", "<u>%1</u>")
 	result = result:gsub("<underline>", "<u>")
 	result = result:gsub("<underlined>", "<u>")
 	result = result:gsub("</underline>", "</u>")
 	result = result:gsub("</underlined>", "</u>")
-
+	
 	result = result:gsub("<strikethrough>(.-)</strikethrough>", "<s>%1</s>")
 	result = result:gsub("<strike>(.-)</strike>", "<s>%1</s>")
 	result = result:gsub("<strikethrough>", "<s>")
 	result = result:gsub("<strike>", "<s>")
 	result = result:gsub("</strikethrough>", "</s>")
 	result = result:gsub("</strike>", "</s>")
-
+	
 	result = result:gsub('<font color="[^"]+"></font>', "")
-
+	
 	result = result:gsub("</font></font>", "</font>")
 	result = result:gsub("</b></b>", "</b>")
 	result = result:gsub("</i></i>", "</i>")
 	result = result:gsub("</u></u>", "</u>")
 	result = result:gsub("</s></s>", "</s>")
-
+	
 	return result
 end
 
@@ -1677,30 +1682,30 @@ local function setupMiniMessageSupport(object, properties)
 	if not (object:IsA("TextLabel") or object:IsA("TextButton") or object:IsA("TextBox")) then
 		return
 	end
-
+	
 	local richTextExplicitlySet = properties and properties.RichText ~= nil
 	if not richTextExplicitlySet then
 		object.RichText = true
 	elseif properties.RichText == false then
 		object.RichText = false
 	end
-
+	
 	local lastText = object.Text or ""
 	local isConverting = false
-
+	
 	local function convertTextIfNeeded(text)
 		if not text or type(text) ~= "string" then
 			return text
 		end
-
+		
 		local hasRichTextTags = text:match('<font color="[^"]+">')
-
+		
 		if hasRichTextTags then
 			return text
 		end
-
+		
 		if text:match("<[^>]+>") then
-		local hasMiniMessagePattern =
+		local hasMiniMessagePattern = 
 			text:match("<%w+>") or
 			text:match("<color:") or
 			text:match("<#[%x%x%x%x%x%x]>") or
@@ -1709,7 +1714,7 @@ local function setupMiniMessageSupport(object, properties)
 			text:match("<obfuscated>") or
 			text:match("</%w+>") or
 			text:match("</color>")
-
+			
 			if hasMiniMessagePattern then
 				if not object.RichText then
 					object.RichText = true
@@ -1717,17 +1722,17 @@ local function setupMiniMessageSupport(object, properties)
 				return MiniMessageToRichText(text)
 			end
 		end
-
+		
 		return text
 	end
-
+	
 	local connection = object:GetPropertyChangedSignal("Text"):Connect(function()
 		if isConverting then
 			return
 		end
-
+		
 		local currentText = object.Text or ""
-
+		
 		if currentText ~= lastText then
 			local converted = convertTextIfNeeded(currentText)
 			if converted ~= currentText then
@@ -1740,10 +1745,10 @@ local function setupMiniMessageSupport(object, properties)
 			end
 		end
 	end)
-
+	
 	table.insert(TextElementConnections, connection)
 	TextElements[object] = true
-
+	
 	if object.Text then
 		local converted = convertTextIfNeeded(object.Text)
 		if converted ~= object.Text then
@@ -1767,7 +1772,7 @@ function Creator.New(Name, Properties, Children)
 			Object[Name] = Value
 		end
 	end
-
+	
 	if originalText and type(originalText) == "string" and originalText:match("<[^>]+>") then
 		Object.Text = MiniMessageToRichText(originalText)
 		if Properties and Properties.RichText == nil then
@@ -1780,9 +1785,9 @@ function Creator.New(Name, Properties, Children)
 	end
 
 	ApplyCustomProps(Object, Properties)
-
+	
 	setupMiniMessageSupport(Object, Properties)
-
+	
 	return Object
 end
 
@@ -1819,66 +1824,13 @@ Library.MiniMessageToRichText = MiniMessageToRichText
 
 local New = Creator.New
 
--- ============================================================
--- SINGLETON GUARD: destroy any previous Scarlet UI instance
--- ============================================================
-do
-    local function Kill(obj)
-        if obj and typeof(obj) == "Instance" and obj.Parent then
-            pcall(function() obj:Destroy() end)
-        end
-    end
-
-    -- 1) Main ScreenGui trong PlayerGui
-    local pg = LocalPlayer:FindFirstChild("PlayerGui")
-    if pg then
-        for _, child in ipairs(pg:GetChildren()) do
-            if child:IsA("ScreenGui") and child.Name == "ScarletUi_Main" then
-                Kill(child)
-            end
-        end
-    end
-
-    -- 2) Minimizer / Search / Preloader trong CoreGui hoặc gethui
-    local host = (gethui and gethui()) or game:GetService("CoreGui")
-    for _, name in ipairs({"ScarletUiDynamicIsland", "NexusGlobalSearch", "NexusPreloader"}) do
-        local obj = host:FindFirstChild(name)
-        if obj then Kill(obj) end
-    end
-
-    -- 3) Blur folder cũ trong Camera
-    local cam = workspace.CurrentCamera
-    if cam then
-        local blur = cam:FindFirstChild("FluentBlur")
-        if blur then Kill(blur) end
-    end
-
-    -- 4) Callback cleanup từ lần chạy trước (nếu có)
-    if getgenv then
-        local old = getgenv()._ScarletUiCleanup
-        if type(old) == "function" then pcall(old) end
-    end
-end
-
-local GUI = New("ScreenGui", {
-	Name = "ScarletUi_Main",
-	Parent = LocalPlayer:WaitForChild("PlayerGui"),
-	Enabled = false,
-})
-Library.GUI = GUI
-
-if getgenv then
-    getgenv()._ScarletUiCleanup = function()
-        pcall(function() GUI:Destroy() end)
-        local cam = workspace.CurrentCamera
-        if cam then
-            local blur = cam:FindFirstChild("FluentBlur")
-            if blur then pcall(function() blur:Destroy() end) end
-        end
-    end
-end
-ProtectGui(GUI)
-
+-- ============================================================================
+-- PURE LIBRARY MODE
+-- Loading Ui.lua only defines the Scarlet Ui API. No ScreenGui, loader,
+-- minimizer, search overlay, tabs, demo controls or autosave loop is created
+-- until the consumer explicitly calls Library:CreateWindow(...).
+-- ============================================================================
+local GUI = nil
 function Library:SafeCallback(Function, ...)
 	if not Function then
 		return
@@ -1929,20 +1881,31 @@ end
 
 local viewportPointToWorld, getOffset = unpack({ viewportPointToWorld, getOffset })
 
-local BlurFolder = Instance.new("Folder")
-BlurFolder.Name = "FluentBlur"
-do
-	local ws = game:GetService("Workspace")
-	local function attachToCurrentCamera()
-		local cam = ws.CurrentCamera
-		if cam and BlurFolder.Parent ~= cam then
-			BlurFolder.Parent = cam
-		end
-	end
-	attachToCurrentCamera()
-	ws:GetPropertyChangedSignal("CurrentCamera"):Connect(attachToCurrentCamera)
-end
+local BlurFolder = nil
+local BlurCameraConnection = nil
 
+local function EnsureBlurFolder()
+    if BlurFolder and BlurFolder.Parent then
+        return BlurFolder
+    end
+
+    BlurFolder = Instance.new("Folder")
+    BlurFolder.Name = "FluentBlur"
+
+    local ws = game:GetService("Workspace")
+    local function attachToCurrentCamera()
+        local cam = ws.CurrentCamera
+        if cam and BlurFolder and BlurFolder.Parent ~= cam then
+            BlurFolder.Parent = cam
+        end
+    end
+
+    attachToCurrentCamera()
+    if not BlurCameraConnection then
+        BlurCameraConnection = ws:GetPropertyChangedSignal("CurrentCamera"):Connect(attachToCurrentCamera)
+    end
+    return BlurFolder
+end
 local function createAcrylic()
 	local Part = Creator.New("Part", {
 		Name = "Body",
@@ -1976,7 +1939,7 @@ function AcrylicBlur()
 			bottomRight = Vector2.new(),
 		}
 		local model = createAcrylic()
-		model.Parent = BlurFolder
+		model.Parent = EnsureBlurFolder()
 
 		local function updatePositions(size, position)
 			positions.topLeft = position
@@ -2504,6 +2467,7 @@ Components.Element = (function()
 		Element:SetTitle(Title or "")
 		Element:SetDesc(Desc)
 
+
 		if Library.Window and Library.Window.RegisterElement then
 			Library.Window.RegisterElement(Element.Frame, Title, "Element", Desc)
 		elseif Library.Windows and #Library.Windows > 0 then
@@ -2611,6 +2575,7 @@ Components.Section = (function()
 			Section.Root.Size = UDim2.new(1, 0, 0, Section.Layout.AbsoluteContentSize.Y + 25)
 		end)
 
+
 		if Library.Window and Library.Window.RegisterElement then
 			Library.Window.RegisterElement(Section.Root, Title, "Section")
 		elseif Library.Windows and #Library.Windows > 0 then
@@ -2664,7 +2629,7 @@ Components.Tab = (function()
 			Type = "Tab",
 		}
 
-		if not fischbypass then
+		if not fischbypass then 
 			if Library:GetIcon(Icon) then
 				Icon = Library:GetIcon(Icon)
 			end
@@ -2858,7 +2823,7 @@ Components.Tab = (function()
 			end
 
 			local SubTabIcon = Icon
-			if not fischbypass then
+			if not fischbypass then 
 				if Library:GetIcon(Icon) then
 					SubTabIcon = Library:GetIcon(Icon)
 				end
@@ -3049,7 +3014,7 @@ Components.Tab = (function()
 				local Section = { Type = "Section" }
 
 				local Icon = SectionIcon
-				if not fischbypass then
+				if not fischbypass then 
 					if Library:GetIcon(Icon) then
 						Icon = Library:GetIcon(Icon)
 					end
@@ -3194,7 +3159,7 @@ Components.Tab = (function()
 			local Section = { Type = "Section" }
 
 			local Icon = SectionIcon
-			if not fischbypass then
+			if not fischbypass then 
 				if Library:GetIcon(Icon) then
 					Icon = Library:GetIcon(Icon)
 				end
@@ -3232,7 +3197,7 @@ Components.Tab = (function()
 		if TabModule.SelectedTab == Tab then
 			return
 		end
-
+		
 		if TabModule.AnimationTask then
 			task.cancel(TabModule.AnimationTask)
 			TabModule.AnimationTask = nil
@@ -3240,12 +3205,12 @@ Components.Tab = (function()
 
 		local Window = TabModule.Window
 		local PreviousTab = TabModule.SelectedTab
-
+		
 		local Direction = (PreviousTab > 0 and Tab > PreviousTab) and 1 or -1
 		if PreviousTab == 0 then
 			Direction = 0
 		end
-
+		
 		local ContainerSize = Window.ContainerHolder and Window.ContainerHolder.AbsoluteSize.X or (Window.ContainerCanvas and Window.ContainerCanvas.AbsoluteSize.X or 500)
 		local SlideDistance = math.min(ContainerSize * 0.15, 60)
 
@@ -4193,7 +4158,7 @@ Components.Window = (function()
 
 		local function UpdateElementVisibility(searchTerm)
 			if not searchTerm then searchTerm = "" end
-
+			
 			local function normalizeText(text)
 				if not text then return "" end
 				text = tostring(text)
@@ -4202,16 +4167,16 @@ Components.Window = (function()
 				text = string.gsub(text, "%s+", " ")
 				return string.lower(text)
 			end
-
+			
 			local function getElementValues(elementFrame)
 				local values = {}
-
+				
 				local function addText(text)
 					if text and text ~= "" then
 						table.insert(values, tostring(text))
 					end
 				end
-
+				
 				local function findTextInDescendants(obj)
 					if obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox") then
 						addText(obj.Text)
@@ -4220,27 +4185,27 @@ Components.Window = (function()
 						findTextInDescendants(child)
 					end
 				end
-
+				
 				findTextInDescendants(elementFrame)
-
+				
 				return values
 			end
-
+			
 			local function checkMatch(text, query)
 				if query == "" then
 					return true
 				end
-
+				
 				local normalizedText = normalizeText(text)
 				if normalizedText == "" then
 					return false
 				end
-
+				
 				local queryLower = normalizeText(query)
 				if queryLower == "" then
 					return true
 				end
-
+				
 				if string.find(queryLower, "%s", 1) then
 					local words = {}
 					for word in string.gmatch(queryLower, "%S+") do
@@ -4248,11 +4213,11 @@ Components.Window = (function()
 							table.insert(words, word)
 						end
 					end
-
+					
 					if #words == 0 then
 						return true
 					end
-
+					
 					for _, word in ipairs(words) do
 						if not string.find(normalizedText, word, 1, true) then
 							return false
@@ -4263,12 +4228,12 @@ Components.Window = (function()
 					return string.find(normalizedText, queryLower, 1, true) ~= nil
 				end
 			end
-
+			
 			local normalizedQuery = normalizeText(searchTerm)
-
+			
 			local matchedSectionFrames = {}
 			local elementsInMatchedSections = {}
-
+			
 			for element, data in pairs(AllElements) do
 				if element and element.Parent then
 					if data.type == "Section" then
@@ -4287,7 +4252,7 @@ Components.Window = (function()
 					end
 				end
 			end
-
+			
 			for element, data in pairs(AllElements) do
 				if element and element.Parent then
 					if normalizedQuery == "" then
@@ -4298,7 +4263,7 @@ Components.Window = (function()
 						local matchesTitle = checkMatch(title, normalizedQuery)
 						local matchesDesc = checkMatch(desc, normalizedQuery)
 						local matchesValues = false
-
+						
 						local elementValues = getElementValues(element)
 						for _, value in ipairs(elementValues) do
 							if checkMatch(value, normalizedQuery) then
@@ -4306,9 +4271,9 @@ Components.Window = (function()
 								break
 							end
 						end
-
+						
 						local matchesSection = elementsInMatchedSections[element] == true
-
+						
 						if not matchesSection and data.section then
 							for sectionFrame, _ in pairs(matchedSectionFrames) do
 								if data.section == sectionFrame then
@@ -4317,7 +4282,7 @@ Components.Window = (function()
 								end
 							end
 						end
-
+						
 						element.Visible = matchesTitle or matchesDesc or matchesValues or matchesSection
 					end
 				end
@@ -4326,9 +4291,9 @@ Components.Window = (function()
 			local searchTermForClosure = searchTerm
 			task.spawn(function()
 				task.wait(0.05)
-
+				
 				if not Window or not Window.ContainerHolder then return end
-
+				
 				for _, tabContainer in pairs(Window.ContainerHolder:GetChildren()) do
 					if tabContainer:IsA("ScrollingFrame") then
 						local containerLayout = tabContainer:FindFirstChild("UIListLayout")
@@ -4339,11 +4304,11 @@ Components.Window = (function()
 							local contentSize = containerLayout.AbsoluteContentSize.Y + paddingTop + paddingBottom
 							tabContainer.CanvasSize = UDim2.new(0, 0, 0, math.max(0, contentSize))
 						end
-
+						
 						for _, section in pairs(tabContainer:GetChildren()) do
 							if section:IsA("Frame") and section.Name ~= "UIPadding" then
 								local sectionContainer = section:FindFirstChild("Container")
-
+								
 								if sectionContainer and sectionContainer:IsA("Frame") then
 									local containerLayout = sectionContainer:FindFirstChild("UIListLayout")
 									if containerLayout then
@@ -4354,7 +4319,7 @@ Components.Window = (function()
 												break
 											end
 										end
-
+										
 										if searchTermForClosure == "" or hasVisibleChild then
 											section.Visible = true
 											local containerPadding = sectionContainer:FindFirstChild("UIPadding")
@@ -4368,7 +4333,7 @@ Components.Window = (function()
 										end
 									end
 								end
-
+								
 								local sectionLayout = section:FindFirstChild("UIListLayout")
 								if sectionLayout then
 									local sectionPadding = section:FindFirstChild("UIPadding")
@@ -4646,7 +4611,7 @@ Components.Window = (function()
 		Window.BackgroundImageTransparency = backgroundImageTransparency
 
 		local rootChildren = {}
-
+		
 		if Config.BackgroundImage then
 			local BackgroundImageFrame = New("ImageLabel", {
 				Name = "BackgroundImage",
@@ -4664,7 +4629,7 @@ Components.Window = (function()
 			})
 			Window.BackgroundImage = BackgroundImageFrame
 			table.insert(rootChildren, BackgroundImageFrame)
-
+			
 			if Window.AcrylicPaint and Window.AcrylicPaint.Frame then
 				if backgroundImageTransparency <= 0.1 then
 					Window.AcrylicPaint.Frame.BackgroundTransparency = 1
@@ -4697,7 +4662,7 @@ Components.Window = (function()
 				end
 			end
 		end
-
+		
 		table.insert(rootChildren, Window.AcrylicPaint.Frame)
 		table.insert(rootChildren, Window.TabDisplay)
 		table.insert(rootChildren, Window.ContainerCanvas)
@@ -4723,6 +4688,7 @@ Components.Window = (function()
 		Creator.AddSignal(Camera:GetPropertyChangedSignal("ViewportSize"), function()
 			CenterWindow()
 		end)
+
 
 		Window.TitleBar = Components.TitleBar({
 			Title = Config.Title,
@@ -4930,7 +4896,7 @@ Components.Window = (function()
 				local tabFrameSize = Window.TabFrame and Window.TabFrame.Size.Y.Offset or 0
 				local userInfoTop = Window.UserInfoTop and 0 or (tabFrameSize - Window.UserInfoHeight - 2)
 				local userInfoBottom = userInfoTop + Window.UserInfoHeight
-
+				
 				if selectorY >= userInfoTop and selectorY <= userInfoBottom then
 					Selector.Visible = false
 					return
@@ -5136,6 +5102,7 @@ Components.Window = (function()
 		end)
 
 		-- UI minimize/restore is controlled only by the Dynamic Island.
+
 
 		function Window:ToggleSearch()
 			Window.ShowSearch = not Window.ShowSearch
@@ -5419,6 +5386,7 @@ Components.Window = (function()
 			Window.SelectorPosMotor:setGoal(Instant(TabModule:GetCurrentTabPos()))
 		end)
 
+
 		return Window
 	end
 end)()
@@ -5578,7 +5546,7 @@ ElementsTable.Dropdown = (function()
 				end
 			end
 		end
-
+		
 		local Dropdown = {
 			Values = Config.Values,
 			Value = Config.Default,
@@ -5603,7 +5571,7 @@ ElementsTable.Dropdown = (function()
 		Dropdown.SetDesc = DropdownFrame.SetDesc
 		Dropdown.Visible = DropdownFrame.Visible
 		Dropdown.Elements = DropdownFrame
-
+		
 		local container = self.Container
 
 		local DropdownDisplay = New("TextLabel", {
@@ -5818,7 +5786,7 @@ ElementsTable.Dropdown = (function()
 				end
 			end
 		end
-
+		
 		if not windowRoot and container then
 			local parent = container.Parent
 			while parent do
@@ -5837,7 +5805,7 @@ ElementsTable.Dropdown = (function()
 
 		local function RecalculateListPosition()
 			if not DropdownHolderCanvas or not DropdownInner then return end
-
+			
 			local dropdownX = DropdownInner.AbsolutePosition.X
 			local dropdownY = DropdownInner.AbsolutePosition.Y
 			local dropdownWidth = DropdownInner.AbsoluteSize.X
@@ -5846,7 +5814,7 @@ ElementsTable.Dropdown = (function()
 			local canvasHeight = DropdownHolderCanvas.AbsoluteSize.Y
 			local viewportHeight = Camera.ViewportSize.Y
 			local viewportWidth = Camera.ViewportSize.X
-
+			
 			if not windowRoot then
 				if Library.Window and Library.Window.Root then
 					windowRoot = Library.Window.Root
@@ -5859,7 +5827,7 @@ ElementsTable.Dropdown = (function()
 						end
 					end
 				end
-
+				
 				if not windowRoot and container then
 					local parent = container.Parent
 					while parent do
@@ -5876,15 +5844,15 @@ ElementsTable.Dropdown = (function()
 					end
 				end
 			end
-
+			
 			local targetX = dropdownX - 1
 			local useFixedY = false
-
+			
 			if windowRoot then
 				local windowX = windowRoot.AbsolutePosition.X
 				local windowWidth = windowRoot.AbsoluteSize.X
 				local windowRight = windowX + windowWidth
-
+				
 				if Dropdown.OpenToRight then
 					targetX = windowRight + 5
 					if Dropdown.SavedY == nil then
@@ -5913,26 +5881,26 @@ ElementsTable.Dropdown = (function()
 					Dropdown.SavedY = nil
 				end
 			end
-
+			
 			local targetY
 			if useFixedY and windowRoot then
 				local windowY = windowRoot.AbsolutePosition.Y
 				local windowHeight = windowRoot.AbsoluteSize.Y
 				local windowCenterY = windowY + windowHeight / 2
 				targetY = windowCenterY - canvasHeight / 2
-
+				
 				local windowTop = windowY
 				local windowBottom = windowY + windowHeight
 				local viewportTop = 0
 				local viewportBottom = viewportHeight
-
+				
 				if targetY + canvasHeight > viewportBottom then
 					targetY = viewportBottom - canvasHeight - 5
 				end
 				if targetY < viewportTop then
 					targetY = viewportTop + 5
 				end
-
+				
 				if targetY + canvasHeight > windowBottom then
 					targetY = windowBottom - canvasHeight - 5
 				end
@@ -5941,10 +5909,10 @@ ElementsTable.Dropdown = (function()
 				end
 			elseif useFixedY and Dropdown.SavedY then
 				targetY = Dropdown.SavedY
-
+				
 				local spaceBelow = viewportHeight - (Dropdown.SavedY + dropdownHeight)
 				local spaceAbove = Dropdown.SavedY
-
+				
 				if canvasHeight > spaceBelow and canvasHeight <= spaceAbove then
 					targetY = Dropdown.SavedY - canvasHeight - 5
 				elseif canvasHeight > spaceBelow and canvasHeight > spaceAbove then
@@ -5959,7 +5927,7 @@ ElementsTable.Dropdown = (function()
 			else
 				local spaceBelow = viewportHeight - (dropdownY + dropdownHeight)
 				local spaceAbove = dropdownY
-
+				
 				if canvasHeight <= spaceBelow then
 					targetY = dropdownY + dropdownHeight + 5
 				elseif canvasHeight <= spaceAbove then
@@ -5972,21 +5940,21 @@ ElementsTable.Dropdown = (function()
 					end
 				end
 			end
-
+			
 			DropdownHolderCanvas.Position = UDim2.fromOffset(targetX, targetY)
 		end
 
 		local ListSizeX = 0
 		local function RecalculateListSize()
 			if not DropdownHolderCanvas or not DropdownHolderFrame then return end
-
+			
 			local visibleCount = 0
 			for _, element in next, DropdownScrollFrame:GetChildren() do
 				if not element:IsA("UIListLayout") and element.Visible then
 					visibleCount = visibleCount + 1
 				end
 			end
-
+			
 			local itemHeight = 32
 			local padding = 3
 			local searchHeight = Dropdown.Search and 38 or 0
@@ -5994,10 +5962,10 @@ ElementsTable.Dropdown = (function()
 			local estimatedContent = (visibleCount > 0) and (visibleCount * itemHeight + (visibleCount - 1) * padding + innerMargins + searchHeight) or (innerMargins + searchHeight)
 			local maxHeight = 392
 			local targetHeight = math.min(estimatedContent, maxHeight)
-
+			
 			local canvasWidth = math.max(170, ListSizeX > 0 and (ListSizeX + 20) or 170)
 			DropdownHolderCanvas.Size = UDim2.fromOffset(canvasWidth, targetHeight)
-
+			
 			local many = visibleCount > 10
 			DropdownHolderFrame.Size = UDim2.fromScale(1, many and (targetHeight / math.max(targetHeight, 1)) or 1)
 		end
@@ -6083,10 +6051,10 @@ ElementsTable.Dropdown = (function()
 				local mousePos = Input.UserInputType == Enum.UserInputType.MouseButton1 and Vector2.new(Mouse.X, Mouse.Y) or Input.Position
 				local AbsPos, AbsSize = DropdownHolderFrame.AbsolutePosition, DropdownHolderFrame.AbsoluteSize
 				local innerAbsPos, innerAbsSize = DropdownInner.AbsolutePosition, DropdownInner.AbsoluteSize
-
+				
 				local clickedInsideDropdown = mousePos.X >= AbsPos.X and mousePos.X <= AbsPos.X + AbsSize.X and mousePos.Y >= AbsPos.Y and mousePos.Y <= AbsPos.Y + AbsSize.Y
 				local clickedInsideInner = mousePos.X >= innerAbsPos.X and mousePos.X <= innerAbsPos.X + innerAbsSize.X and mousePos.Y >= innerAbsPos.Y and mousePos.Y <= innerAbsPos.Y + innerAbsSize.Y
-
+				
 				if not clickedInsideDropdown and not clickedInsideInner then
 					Dropdown:Close()
 				end
@@ -7597,7 +7565,74 @@ ElementsTable.Input = (function()
 end)()
 
 local NotificationModule = Components.Notification
-NotificationModule:Init(GUI)
+local NotificationModule = Components.Notification
+
+local function EnsureGui()
+    if Library.GUI and Library.GUI.Parent then
+        return Library.GUI
+    end
+
+    local function Kill(obj)
+        if obj and typeof(obj) == "Instance" and obj.Parent then
+            pcall(function() obj:Destroy() end)
+        end
+    end
+
+    -- Cleanup only starts when a Window is actually requested.
+    local pg = LocalPlayer:FindFirstChild("PlayerGui")
+    if pg then
+        for _, child in ipairs(pg:GetChildren()) do
+            if child:IsA("ScreenGui") and child.Name == "ScarletUi_Main" then
+                Kill(child)
+            end
+        end
+    end
+
+    local host = (gethui and gethui()) or game:GetService("CoreGui")
+    for _, name in ipairs({"ScarletUiDynamicIsland", "NexusGlobalSearch", "NexusPreloader"}) do
+        local obj = host:FindFirstChild(name)
+        if obj then Kill(obj) end
+    end
+
+    local cam = workspace.CurrentCamera
+    if cam then
+        local blur = cam:FindFirstChild("FluentBlur")
+        if blur then Kill(blur) end
+    end
+
+    if getgenv then
+        local old = getgenv()._ScarletUiCleanup
+        if type(old) == "function" then pcall(old) end
+    end
+
+    GUI = New("ScreenGui", {
+        Name = "ScarletUi_Main",
+        Parent = LocalPlayer:WaitForChild("PlayerGui"),
+        Enabled = true,
+        ResetOnSpawn = false,
+    })
+    Library.GUI = GUI
+    ProtectGui(GUI)
+
+    if NotificationModule and NotificationModule.Init then
+        pcall(function() NotificationModule:Init(GUI) end)
+    end
+
+    if getgenv then
+        getgenv()._ScarletUiCleanup = function()
+            pcall(function() if GUI then GUI:Destroy() end end)
+            local cam2 = workspace.CurrentCamera
+            if cam2 then
+                local blur2 = cam2:FindFirstChild("FluentBlur")
+                if blur2 then pcall(function() blur2:Destroy() end) end
+            end
+        end
+    end
+
+    return GUI
+end
+
+Library._EnsureGui = EnsureGui
 
 local New = Creator.New
 
@@ -8470,1017 +8505,1666 @@ end
 
 local SaveManager = {} do
 
+
+
 	SaveManager.Folder = "FluentSettings"
+
 
 	SaveManager.Ignore = {}
 
+
 	SaveManager.Parser = {
+
 
 		Toggle = {
 
-			Save = function(idx, object)
 
-				return { type = "Toggle", idx = idx, value = object.Value }
+			Save = function(idx, object) 
+
+
+				return { type = "Toggle", idx = idx, value = object.Value } 
+
 
 			end,
+
 
 			Load = function(idx, data)
 
-				if SaveManager.Options[idx] then
+
+				if SaveManager.Options[idx] then 
+
 
 					SaveManager.Options[idx]:SetValue(data.value)
 
+
 				end
+
 
 			end,
 
+
 		},
+
 
 		Slider = {
 
+
 			Save = function(idx, object)
+
 
 				return { type = "Slider", idx = idx, value = tostring(object.Value) }
 
+
 			end,
+
 
 			Load = function(idx, data)
 
-				if SaveManager.Options[idx] then
+
+				if SaveManager.Options[idx] then 
+
 
 					SaveManager.Options[idx]:SetValue(data.value)
 
+
 				end
+
 
 			end,
 
+
 		},
+
 
 		Dropdown = {
 
+
 			Save = function(idx, object)
+
 
 				return { type = "Dropdown", idx = idx, value = object.Value, mutli = object.Multi }
 
+
 			end,
+
 
 			Load = function(idx, data)
 
-				if SaveManager.Options[idx] then
+
+				if SaveManager.Options[idx] then 
+
 
 					SaveManager.Options[idx]:SetValue(data.value)
 
+
 				end
+
 
 			end,
 
+
 		},
+
 
 		Colorpicker = {
 
+
 			Save = function(idx, object)
+
 
 				return { type = "Colorpicker", idx = idx, value = object.Value:ToHex(), transparency = object.Transparency }
 
+
 			end,
+
 
 			Load = function(idx, data)
 
-				if SaveManager.Options[idx] then
+
+				if SaveManager.Options[idx] then 
+
 
 					SaveManager.Options[idx]:SetValueRGB(Color3.fromHex(data.value), data.transparency)
 
+
 				end
+
 
 			end,
 
+
 		},
+
 
 		Keybind = {
 
+
 			Save = function(idx, object)
+
 
 				return { type = "Keybind", idx = idx, mode = object.Mode, key = object.Value }
 
+
 			end,
+
 
 			Load = function(idx, data)
 
-				if SaveManager.Options[idx] then
+
+				if SaveManager.Options[idx] then 
+
 
 					SaveManager.Options[idx]:SetValue(data.key, data.mode)
 
+
 				end
+
 
 			end,
 
+
 		},
+
+
+
+
 
 		Input = {
 
+
 			Save = function(idx, object)
+
 
 				return { type = "Input", idx = idx, text = object.Value }
 
+
 			end,
+
 
 			Load = function(idx, data)
 
+
 				if SaveManager.Options[idx] and type(data.text) == "string" then
+
 
 					SaveManager.Options[idx]:SetValue(data.text)
 
+
 				end
+
 
 			end,
 
+
 		},
 
+
 	}
+
+
+
+
 
 	function SaveManager:SetIgnoreIndexes(list)
 
+
 		for _, key in next, list do
+
 
 			self.Ignore[key] = true
 
+
 		end
 
+
 	end
+
 
 	function SaveManager:SetFolder(folder)
 
+
 		self.Folder = folder;
+
 
 		self:BuildFolderTree()
 
+
 	end
+
+
+
+
 
 	function SaveManager:Save(name)
 
+
 		if (not name) then
+
 
 			return false, "no config file is selected"
 
+
 		end
+
+
+
+
 
 		local fullPath = self.Folder .. "/" .. name .. ".json"
 
+
+
+
+
 		local data = {
+
 
 			objects = {}
 
+
 		}
+
+
+
+
+
+
+
 
 		for idx, option in next, SaveManager.Options do
 
+
 			if self.Parser[option.Type] and not self.Ignore[idx] then
+
 
 				table.insert(data.objects, self.Parser[option.Type].Save(idx, option))
 
+
 			end
 
-		end
+
+		end	
+
+
+
+
 
 		local success, encoded = pcall(httpService.JSONEncode, httpService, data)
 
+
 		if not success then
+
 
 			return false, "failed to encode data"
 
+
 		end
+
+
+
+
 
 		writefile(fullPath, encoded)
 
+
 		return true
+
 
 	end
 
+
+
+
+
 	if not RunService:IsStudio() then
+
 
 		function SaveManager:Load(name)
 
+
 			if (not name) then
+
 
 				return false, "no config file is selected"
 
+
 			end
+
+
+
+
 
 			local file = self.Folder .. "/" .. name .. ".json"
 
+
 			if not isfile(file) then return false, "Create Config Save File" end
+
+
+
+
 
 			local success, decoded = pcall(httpService.JSONDecode, httpService, readfile(file))
 
+
 			if not success then return false, "decode error" end
+
+
+
+
 
 			for _, option in next, decoded.objects do
 
+
 				if self.Parser[option.type] and not self.Ignore[option.idx] then
+
 
 					task.spawn(function() self.Parser[option.type].Load(option.idx, option) end)
 
+
 				end
 
+
 			end
+
+
+
+
 
 			Fluent.SettingLoaded = true
 
+
+
+
+
 			return true, decoded
+
 
 		end
 
+
 	end
+
+
+
+
 
 	SaveManager.IgnoreThemeSettings = function(self)
 
-		self:SetIgnoreIndexes({
+
+		self:SetIgnoreIndexes({ 
+
 
 			"InterfaceTheme", "AcrylicToggle", "TransparentToggle", "MenuKeybind"
 
+
 		})
 
+
 	end
+
+
+
+
 
 	function SaveManager:BuildFolderTree()
 
+
 		local paths = {
+
 
 			self.Folder,
 
+
 			self.Folder .. "/"
+
 
 		}
 
+
+
+
+
 		for i = 1, #paths do
+
 
 			local str = paths[i]
 
+
 			if not isfolder(str) then
+
 
 				makefolder(str)
 
+
 			end
+
 
 		end
 
+
 	end
+
+
+
+
 
 	function SaveManager:RefreshConfigList()
 
+
 		local list = listfiles(self.Folder .. "/")
+
+
+
+
 
 		local out = {}
 
+
 		for i = 1, #list do
+
 
 			local file = list[i]
 
+
 			if file:sub(-5) == ".json" then
+
 
 				local pos = file:find(".json", 1, true)
 
+
 				local start = pos
+
+
+
+
 
 				local char = file:sub(pos, pos)
 
+
 				while char ~= "/" and char ~= "\\" and char ~= "" do
+
 
 					pos = pos - 1
 
+
 					char = file:sub(pos, pos)
 
+
 				end
+
+
+
+
 
 				if char == "/" or char == "\\" then
 
+
 					local name = file:sub(pos + 1, start - 1)
+
 
 					if name ~= "options" then
 
+
 						table.insert(out, name)
+
 
 					end
 
+
 				end
+
 
 			end
 
+
 		end
+
+
+
+
 
 		return out
 
+
 	end
+
+
+
+
 
 	function SaveManager:SetLibrary(library)
 
+
 		self.Library = library
+
 
 		self.Options = library.Options
 
+
 	end
 
+
+
+
+
 	if not RunService:IsStudio() then
+
 
 		function SaveManager:LoadAutoloadConfig()
 
+
 			if isfile(self.Folder .. "/autoload.txt") then
+
 
 				local name = readfile(self.Folder .. "/autoload.txt")
 
+
+
+
+
 				local success, err = self:Load(name)
+
 
 				if not success then
 
+
 					return self.Library:Notify({
+
 
 						Title = "Interface",
 
+
 						Content = "Config loader",
+
 
 						SubContent = "Failed to load autoload config: " .. err,
 
+
 						Duration = 7
+
 
 					})
 
+
 				end
+
+
+
+
 
 				self.Library:Notify({
 
+
 					Title = "Interface",
 
+
 					Content = "Config loader",
+
 
 					SubContent = string.format("Auto loaded config %q", name),
 
+
 					Duration = 7
+
 
 				})
 
+
 			end
+
 
 		end
 
+
 	end
+
+
+
+
 
 	function SaveManager:BuildConfigSection(tab)
 
+
 		assert(self.Library, "Must set SaveManager.Library")
+
+
+
+
 
 		local section = tab:AddSection("Configuration", "settings")
 
+
+
+
+
 		section:AddInput("SaveManager_ConfigName",    { Title = "Config name" })
+
 
 		section:AddDropdown("SaveManager_ConfigList", { Title = "Config list", Values = self:RefreshConfigList(), AllowNull = true })
 
+
+
+
+
 		section:AddButton({
+
 
 			Title = "Create config",
 
+
 			Callback = function()
+
 
 				local name = SaveManager.Options.SaveManager_ConfigName.Value
 
-				if name:gsub(" ", "") == "" then
+
+
+
+
+				if name:gsub(" ", "") == "" then 
+
 
 					return self.Library:Notify({
 
+
 						Title = "Interface",
 
+
 						Content = "Config loader",
+
 
 						SubContent = "Invalid config name (empty)",
 
+
 						Duration = 7
+
 
 					})
 
+
 				end
+
+
+
+
 
 				local success, err = self:Save(name)
 
+
 				if not success then
+
 
 					return self.Library:Notify({
 
+
 						Title = "Interface",
+
 
 						Content = "Config loader",
 
+
 						SubContent = "Failed to save config: " .. err,
+
 
 						Duration = 7
 
+
 					})
+
 
 				end
 
+
+
+
+
 				self.Library:Notify({
+
 
 					Title = "Interface",
 
+
 					Content = "Config loader",
+
 
 					SubContent = string.format("Created config %q", name),
 
+
 					Duration = 7
 
+
 				})
+
+
+
+
 
 				SaveManager.Options.SaveManager_ConfigList:SetValues(self:RefreshConfigList())
 
+
 				SaveManager.Options.SaveManager_ConfigList:SetValue(nil)
 
+
 			end
+
 
 		})
 
+
+
+
+
 		section:AddButton({Title = "Load config", Callback = function()
 
+
 			local name = SaveManager.Options.SaveManager_ConfigList.Value
+
+
+
+
 
 			local success, err = self:Load(name)
 
+
 			if not success then
+
 
 				return self.Library:Notify({
 
+
 					Title = "Interface",
 
+
 					Content = "Config loader",
+
 
 					SubContent = "Failed to load config: " .. err,
 
+
 					Duration = 7
+
 
 				})
 
+
 			end
+
+
+
+
 
 			self.Library:Notify({
 
+
 				Title = "Interface",
 
+
 				Content = "Config loader",
+
 
 				SubContent = string.format("Loaded config %q", name),
 
+
 				Duration = 7
+
 
 			})
 
+
 		end})
+
+
+
+
 
 		section:AddButton({Title = "Save config", Callback = function()
 
+
 			local name = SaveManager.Options.SaveManager_ConfigList.Value
+
+
+
+
 
 			local success, err = self:Save(name)
 
+
 			if not success then
+
 
 				return self.Library:Notify({
 
+
 					Title = "Interface",
+
 
 					Content = "Config loader",
 
+
 					SubContent = "Failed to overwrite config: " .. err,
+
 
 					Duration = 7
 
+
 				})
+
 
 			end
 
+
+
+
+
 			self.Library:Notify({
+
 
 				Title = "Interface",
 
+
 				Content = "Config loader",
+
 
 				SubContent = string.format("Overwrote config %q", name),
 
+
 				Duration = 7
+
 
 			})
 
+
 		end})
+
+
+
+
 
 		section:AddButton({Title = "Refresh list", Callback = function()
 
+
 			SaveManager.Options.SaveManager_ConfigList:SetValues(self:RefreshConfigList())
+
 
 			SaveManager.Options.SaveManager_ConfigList:SetValue(nil)
 
+
 		end})
+
+
+
+
 
 		local AutoloadButton
 
+
 		AutoloadButton = section:AddButton({Title = "Set as autoload", Description = "Current autoload config: none", Callback = function()
+
 
 			local name = SaveManager.Options.SaveManager_ConfigList.Value
 
+
 			writefile(self.Folder .. "/autoload.txt", name)
 
+
 			AutoloadButton:SetDesc("Current autoload config: " .. name)
+
 
 			self.Library:Notify({
 
+
 				Title = "Interface",
+
 
 				Content = "Config loader",
 
+
 				SubContent = string.format("Set %q to auto load", name),
+
 
 				Duration = 7
 
+
 			})
+
 
 		end})
 
+
+
+
+
 		if isfile(self.Folder .. "/autoload.txt") then
+
 
 			local name = readfile(self.Folder .. "/autoload.txt")
 
+
 			AutoloadButton:SetDesc("Current autoload config: " .. name)
 
+
 		end
+
+
+
+
 
 		SaveManager:SetIgnoreIndexes({ "SaveManager_ConfigList", "SaveManager_ConfigName" })
 
+
 	end
+
+
+
+
 
 	if not RunService:IsStudio() then
 
+
 		SaveManager:BuildFolderTree()
 
+
 	end
+
 
 end
 
+
+
+
+
 local InterfaceManager = {} do
+
 
 	InterfaceManager.Folder = "FluentSettings"
 
+
 	InterfaceManager.Settings = {
+
 
 		Acrylic = true,
 
+
 		Transparency = true,
+
 
 		MenuKeybind = "M"
 
+
 	}
+
+
+
+
 
 	function InterfaceManager:SetTheme(name)
 
+
 		InterfaceManager.Settings.Theme = name
 
+
 	end
+
+
+
+
 
 	function InterfaceManager:SetFolder(folder)
 
+
 		self.Folder = folder;
+
 
 		self:BuildFolderTree()
 
+
 	end
+
+
+
+
 
 	function InterfaceManager:SetLibrary(library)
 
+
 		self.Library = library
 
+
 	end
+
+
+
+
 
 	function InterfaceManager:BuildFolderTree()
 
+
 		local paths = {}
+
+
+
+
 
 		local parts = self.Folder:split("/")
 
+
 		for idx = 1, #parts do
+
 
 			paths[#paths + 1] = table.concat(parts, "/", 1, idx)
 
+
 		end
+
+
+
+
 
 		table.insert(paths, self.Folder)
 
+
 		table.insert(paths, self.Folder .. "/")
+
+
+
+
 
 		for i = 1, #paths do
 
+
 			local str = paths[i]
+
 
 			if not isfolder(str) then
 
+
 				makefolder(str)
+
 
 			end
 
+
 		end
 
+
 	end
+
+
+
+
 
 	function InterfaceManager:SaveSettings()
 
+
 		writefile(self.Folder .. "/options.json", httpService:JSONEncode(InterfaceManager.Settings))
+
 
 	end
 
+
+
+
+
 	function InterfaceManager:LoadSettings()
+
 
 		local path = self.Folder .. "/options.json"
 
+
 		if isfile(path) then
 
+
 			local data = readfile(path)
+
+
+
+
 
 			local success, decoded = false, nil
 			if not RunService:IsStudio() then
 				success, decoded = pcall(httpService.JSONDecode, httpService, data)
 			end
 
+
+
+
+
 			if success then
+
 
 				for i, v in next, decoded do
 
+
 					InterfaceManager.Settings[i] = v
+
 
 				end
 
+
 			end
+
 
 		end
 
+
 	end
+
 
 	function InterfaceManager:BuildInterfaceSection(tab)
 
+
 		assert(self.Library, "Must set InterfaceManager.Library")
+
 
 		local Library = self.Library
 
+
 		local Settings = InterfaceManager.Settings
+
+
+
+
 
 		InterfaceManager:LoadSettings()
 
+
+
+
+
 		local section = tab:AddSection("Interface", "monitor")
+
 
 		local InterfaceTheme = section:AddDropdown("InterfaceTheme", {
 
+
 			Title = "Theme",
+
 
 			Description = "Changes the interface theme.",
 
+
 			Values = Library.Themes,
+
 
 			Default = self.Library.Theme,
 
+
 			Callback = function(Value)
+
 
 				Library:SetTheme(Value)
 
+
 				Settings.Theme = Value
+
 
 				InterfaceManager:SaveSettings()
 
+
 			end
 
+
 		})
+
+
+
+
 
 		InterfaceTheme:SetValue(Settings.Theme)
 
+
+
+
+
 		if Library.UseAcrylic and not Mobile then
+
 
 			section:AddToggle("AcrylicToggle", {
 
+
 				Title = "Acrylic",
+
 
 				Description = "The blurred background requires graphic quality 8+",
 
+
 				Default = Settings.Acrylic,
+
 
 				Callback = function(Value)
 
+
 					Library:ToggleAcrylic(Value)
+
 
 					Settings.Acrylic = Value
 
+
 					InterfaceManager:SaveSettings()
+
 
 				end
 
+
 			})
+
 
 		elseif Mobile then
 
+
 			Settings.Acrylic = false
 
+
 		end
+
+
+
+
 
 		section:AddSlider("WindowTransparency", {
 
+
 			Title = "Window Transparency",
+
 
 			Description = "Adjusts the window transparency.",
 
+
 			Default = 1,
+
 
 			Min = 0,
 
+
 			Max = 3,
+
 
 			Rounding = 1,
 
+
 			Callback = function(Value)
+
 
 				Library:SetWindowTransparency(Value)
 
+
 			end
+
 
 		})
 
+
+
+
+
+
+
+
 		-- UI visibility is controlled only by the Dynamic Island; no keyboard toggle setting.
 
+
 	end
 
+
 end
+
+
+
+
 
 Library.CreateWindow = function(self, Config)
+    Config = Config or {}
+    assert(Config.Title, "Window - Missing Title")
 
-	assert(Config.Title, "Window - Missing Title")
+    if Library.Window then
+        print("You cannot create more than one window.")
+        return Library.Window
+    end
 
-	if Library.Window then
+    Config.Size = Config.Size or (Mobile and UDim2.fromOffset(640, 470) or UDim2.fromOffset(640, 450))
+    Config.TabWidth = tonumber(Config.TabWidth) or 148
+    Config.Theme = Config.Theme or "Dark"
+    Config.Search = Config.Search ~= false
+    Config.DropdownsOutsideWindow = Config.DropdownsOutsideWindow ~= false
 
-		print("You cannot create more than one window.")
+    if Config.BackgroundImage == nil then
+        Config.BackgroundImage = "rbxassetid://13196113628"
+    end
+    if Config.BackgroundTransparency == nil then
+        Config.BackgroundTransparency = 0.5
+    end
 
-		return
+    Library.MinimizeKey = Enum.KeyCode.Unknown
+    Library.UseAcrylic = Config.Acrylic == true
+    Library.Acrylic = Config.Acrylic == true
+    Library.Theme = Config.Theme
+    Library.Unloaded = false
+    Library._AcrylicPending = Config.Acrylic == true
 
-	end
+    EnsureGui()
+    Library.GUI.Enabled = true
 
-	Library.MinimizeKey = Enum.KeyCode.Unknown
+    local Icon = Config.Icon
+    if not fischbypass then
+        if Icon and Library:GetIcon(Icon) then
+            Icon = Library:GetIcon(Icon)
+        end
+        if Icon == "" then Icon = nil end
+    end
 
-	-- Defaults for Fluent-compatible CreateWindow calls
-	Config.Size = Config.Size or UDim2.fromOffset(580, 460)
-	Config.TabWidth = Config.TabWidth or 160
+    local Window = Components.Window({
+        Parent = Library.GUI,
+        Size = Config.Size,
+        Title = Config.Title,
+        Icon = Icon,
+        Image = Config.Image,
+        BackgroundImage = Config.BackgroundImage,
+        BackgroundTransparency = Config.BackgroundTransparency,
+        BackgroundImageTransparency = Config.BackgroundImageTransparency,
+        SubTitle = Config.SubTitle,
+        TabWidth = Config.TabWidth,
+        DropdownsOutsideWindow = Config.DropdownsOutsideWindow,
+        Search = Config.Search,
+        UserInfoTitle = Config.UserInfoTitle,
+        UserInfo = Config.UserInfo,
+        UserInfoTop = Config.UserInfoTop,
+        UserInfoSubtitle = Config.UserInfoSubtitle,
+        UserInfoSubtitleColor = Config.UserInfoSubtitleColor,
+    })
 
-	Library.UseAcrylic = Config.Acrylic or false
+    Library.Window = Window
+    table.insert(Library.Windows, Window)
+    InterfaceManager:SetTheme(Config.Theme)
+    Library:SetTheme(Config.Theme)
 
-	Library.Acrylic = Config.Acrylic or false
+    if Config.LoadUI ~= false and Window.Root then
+        Window.Root.Visible = false
+    end
+    if Library._InitializeRuntime then
+        task.defer(function()
+            Library:_InitializeRuntime(Window, Config)
+        end)
+    end
 
-	Library.Theme = Config.Theme or "Dark"
-
-	if Config.BackgroundImage == nil then
-		Config.BackgroundImage = "rbxassetid://13196113628"
-	end
-
-	if Config.BackgroundTransparency == nil then
-		Config.BackgroundTransparency = 0.5
-	end
-
-		-- Do NOT init Acrylic yet. Wait until loader finishes.
-	if Config.Acrylic then
-		Library._AcrylicPending = true
-	end
-
-	local Icon = Config.Icon
-
-	if not fischbypass then
-
-		if Library:GetIcon(Icon) then
-
-			Icon = Library:GetIcon(Icon)
-
-		end
-
-		if Icon == "" or Icon == nil then
-
-			Icon = nil
-
-		end
-
-	end
-
-	local Window = Components.Window({
-
-		Parent = GUI,
-
-		Size = Config.Size,
-
-		Title = Config.Title,
-
-		Icon = Icon,
-
-		Image = Config.Image,
-
-		BackgroundImage = Config.BackgroundImage,
-
-		BackgroundTransparency = Config.BackgroundTransparency,
-
-		BackgroundImageTransparency = Config.BackgroundImageTransparency,
-
-		SubTitle = Config.SubTitle,
-
-		TabWidth = Config.TabWidth,
-
-		DropdownsOutsideWindow = Config.DropdownsOutsideWindow ~= false,
-
-		Search = Config.Search,
-
-		UserInfoTitle = Config.UserInfoTitle,
-
-		UserInfo = Config.UserInfo,
-
-		UserInfoTop = Config.UserInfoTop,
-
-		UserInfoSubtitle = Config.UserInfoSubtitle,
-
-		UserInfoSubtitleColor = Config.UserInfoSubtitleColor,
-
-	})
-
-	Library.Window = Window
-
-	table.insert(Library.Windows, Window)
-
-	InterfaceManager:SetTheme(Config.Theme)
-
-	Library:SetTheme(Config.Theme)
-
-	return Window
-
+    return Window
 end
 
+
+
 function Library:CreateMinimizer(Config)
+
 
 	Config = Config or {}
 	local TweenService = game:GetService("TweenService")
 
+
 	if self.Minimizer and self.Minimizer.Parent then
+
 
 		return self.Minimizer
 
+
 	end
+
+
+
+
 
 	local parentGui = Library.GUI or GUI
 
+
 	if parentGui then parentGui.DisplayOrder = 1000 end
+
 
 	local isMobile = Mobile and true or false
 
+
+
+
+
 	local iconAsset = "rbxassetid://116068983769705"
+
 
 	if type(Config.Icon) == "string" and Config.Icon ~= "" then
 
+
 		pcall(function()
+
 
 			local resolved = Library:GetIcon(Config.Icon)
 
+
 			if resolved then
+
 
 				iconAsset = resolved
 
+
 			elseif string.match(Config.Icon, "^rbxassetid://%d+$") then
+
 
 				iconAsset = Config.Icon
 
+
 			end
+
 
 		end)
 
+
 	end
+
+
+
+
 
 	local useAcrylic = false
 
+
+
+
+
 	local cornerRadius = tonumber(Config.Corner)
+
 
 	local backgroundTransparency = (typeof(Config.Transparency) == "number") and math.clamp(Config.Transparency, 0, 1) or 0
 
+
 	local draggableWhole = (Config.Draggable == true)
+
+
+
+
 
 	local holder
 
+
 	local function createButton(isDesktop)
+
 
 		return New("TextButton", {
 
+
 			Name = "MinimizeButton",
+
 
 			Size = UDim2.new(1, 0, 1, 0),
 
+
 			BorderSizePixel = 0,
+
 
 			BackgroundTransparency = backgroundTransparency or 0,
 
+
 			AutoButtonColor = false,
+
 
 			ThemeTag = {
 
+
 				BackgroundColor3 = "Element",
+
 
 			},
 
+
 		}, {
+
 
 			New("UICorner", { CornerRadius = UDim.new(0, cornerRadius or (isDesktop and 14 or 12)) }),
 
+
 			New("UIStroke", {
+
 
 				ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
 
+
 				Transparency = isDesktop and 0.6 or 0.7,
+
 
 				Thickness = isDesktop and 2 or 1.5,
 
+
 				ThemeTag = {
+
 
 					Color = "ElementBorder",
 
+
 				},
 
+
 			}),
+
 
 			New("ImageLabel", {
 
+
 				Name = "Icon",
+
 
 				Image = iconAsset,
 
+
 				Size = UDim2.fromOffset(22, 22),
+
 
 				Position = UDim2.new(0.5, 0, 0.5, 0),
 
+
 				AnchorPoint = Vector2.new(0.5, 0.5),
+
 
 				BackgroundTransparency = 1,
 
+
 				ThemeTag = {
+
 
 					ImageColor3 = "Text",
 
+
 				},
+
 
 			}, {
 
+
 				New("UIAspectRatioConstraint", { AspectRatio = 1, AspectType = Enum.AspectType.FitWithinMaxSize }),
+
 
 				New("UICorner", { CornerRadius = UDim.new(0, 0) })
 
+
 			}),
+
+
+
+
 
 		})
 
+
 	end
+
+
+
+
 
 	if isMobile then
 
+
 		holder = New("Frame", {
+
 
 			Name = "ScarletUiDynamicIsland",
 
+
 			Parent = parentGui,
+
 
 			Size = Config.Size or UDim2.fromOffset(48, 48),
 
+
 			Position = Config.Position or UDim2.new(0.5, -24, 0, 12),
+
 
 			BackgroundTransparency = 1,
 
+
 			ZIndex = 999999999,
+
 
 			Visible = (Config.Visible ~= false),
 
+
 		})
+
 
 	else
 
+
 		holder = New("Frame", {
+
 
 			Name = "ScarletUiDynamicIsland",
 
+
 			Parent = parentGui,
+
 
 			Size = Config.Size or UDim2.fromOffset(48, 48),
 
+
 			Position = Config.Position or UDim2.new(0.5, -24, 0, 12),
+
 
 			BackgroundTransparency = 1,
 
+
 			ZIndex = 999999999,
+
 
 			Visible = (Config.Visible ~= false),
 
+
 		})
 
+
 	end
+
+
+
+
 
 	-- No separate Acrylic child on the island; it eliminates the ghost bar on unload.
 	local btnInstance = createButton(not isMobile)
 
+
 	btnInstance.Parent = holder
+
 
 	btnInstance.ZIndex = (holder.ZIndex or 0) + 2
 
@@ -9703,6 +10387,10 @@ function Library:CreateMinimizer(Config)
 		end
 	end)
 
+
+
+
+
 	local MinimizerController = { AnimateIsland = AnimateIsland }
 	function MinimizerController.Destroy()
 		cancelIslandTweens()
@@ -9718,31 +10406,54 @@ function Library:CreateMinimizer(Config)
 
 	self.Minimizer = holder
 
+
 	return holder
 
+
 end
+
+
+
+
 
 function Library:SetTheme(Value)
 
+
 	if Library.Window and table.find(Library.Themes, Value) then
+
 
 		Library.Theme = Value
 
+
 		Creator.UpdateTheme()
+
+
+
+
 
 		if Value == "Glass" then
 
+
 			Library:SetWindowTransparency(0.9)
+
 
 		end
 
+
 	end
+
 
 end
 
+
+
+
+
 function Library:Destroy()
 
+
 	if Library.Window then
+
 
 		Library.Unloaded = true
 
@@ -9767,137 +10478,1717 @@ function Library:Destroy()
 			end)
 		end)
 
+
 		if Library.UseAcrylic then
+
 
 			Library.Window.AcrylicPaint.Model:Destroy()
 
+
 		end
+
 
 		Creator.Disconnect()
 
-		Library.GUI:Destroy()
+		if BlurCameraConnection then
+			pcall(function() BlurCameraConnection:Disconnect() end)
+			BlurCameraConnection = nil
+		end
+		if BlurFolder then
+			pcall(function() BlurFolder:Destroy() end)
+			BlurFolder = nil
+		end
 
+		if Library.GUI then
+			Library.GUI:Destroy()
+			Library.GUI = nil
+		end
+		GUI = nil
 	end
 
+
 end
+
+
+
+
 
 function Library:ToggleAcrylic(Value)
 
+
 	if Library.Window then
+
 
 		if Library.UseAcrylic then
 
+
 			Library.Acrylic = Value
+
 
 			if Library.Window.AcrylicPaint and Library.Window.AcrylicPaint.Model then
 
+
 				Library.Window.AcrylicPaint.Model.Transparency = Value and 0.95 or 1
+
 
 			end
 
+
 		end
+
 
 	end
 
+
 end
+
+
+
+
 
 function Library:ToggleTransparency(Value)
 
+
 	if Library.Window then
+
 
 		Library.Window.AcrylicPaint.Frame.Background.BackgroundTransparency = Value and 0.35 or 0
 
+
 	end
 
+
 end
+
 
 function Library:SetWindowTransparency(Value)
 
+
 	if Library.Window and Library.UseAcrylic then
+
 
 		Value = math.clamp(Value, 0, 3)
 
+
+
+
+
 		if Library.Theme == "Glass" then
+
 
 			local glassTransparency = 0.8 + (Value * 0.05)
 
+
 			if Value > 1 then
+
 
 				glassTransparency = 0.85 + ((Value - 1) * 0.04)
 
+
 			end
 
+
 			if Value > 2 then
+
 
 				glassTransparency = 0.93 + ((Value - 2) * 0.04)
 
+
 			end
+
 
 			Library.Window.AcrylicPaint.Model.Transparency = math.min(glassTransparency, 0.99)
 
+
+
+
+
 			local backgroundTransparency = 0.7 + (Value * 0.08)
+
 
 			if Value > 1 then
 
+
 				backgroundTransparency = 0.78 + ((Value - 1) * 0.07)
 
+
 			end
+
 
 			if Value > 2 then
 
+
 				backgroundTransparency = 0.85 + ((Value - 2) * 0.1)
 
+
 			end
+
 
 			Library.Window.AcrylicPaint.Frame.Background.BackgroundTransparency = math.min(backgroundTransparency, 0.99)
 
+
+
+
+
 			Library.NotificationTransparency = Value
+
+
+
+
 
 			for _, notification in pairs(Library.ActiveNotifications or {}) do
 
+
 				if notification and notification.ApplyTransparency then
+
 
 					notification:ApplyTransparency()
 
+
 				end
+
 
 			end
 
+
 		else
+
 
 			Library.Window.AcrylicPaint.Model.Transparency = 0.98
 
+
 			Library.Window.AcrylicPaint.Frame.Background.BackgroundTransparency = Value * 0.3
+
 
 		end
 
+
 	end
 
+
 end
+
+
+
+
 
 function Library:Notify(Config)
 	if Library.NotificationsEnabled == false then return nil end
 	return NotificationModule:New(Config)
 end
 
+
+
+
+
 Library.NotificationsEnabled = true
-
-if getgenv then
-
-	getgenv().Fluent = Library
-
-else
-
-	Fluent = Library
-
-end
 
 -- Legacy minimizer widgets removed: Dynamic Island is the single minimizer surface.
 
 -- ================================================================
 
--- Runtime demo/test/autosave code intentionally removed.
--- This file is a pure library: loading it only defines/returns the API.
--- The consumer must explicitly call Library:CreateWindow(...) to create UI.
+function Library:_InitializeRuntime(Window, Config)
+    local Fluent = Library
+    -- Keep content containers stable. Button hover/selection animations remain,
+    -- but panels themselves switch instantly to avoid visibility flicker.
+    Fluent.StableContentLayout = false
+    local Players = game:GetService("Players")
+    local RunService = game:GetService("RunService")
+    local LocalPlayer = Players.LocalPlayer
+
+    local State = {
+        Animations = true,
+        Acrylic = true,
+        GlassEnabled = true,
+        Compact = false,
+        Pulse = true,
+        Accent = "Arctic",
+        Theme = "Arctic",
+        Speed = 4,
+        Intensity = 75,
+        DemoCounter = 0,
+        SearchHotkey = Enum.KeyCode.Semicolon,
+    }
+    Library.ScarletState = State
+
+
+    -- ================================================================
+    -- DEVICE / RESPONSIVE ENGINE
+    -- Syde-style detection: touch + viewport are used together so a
+    -- touchscreen laptop does not get forced into the mobile layout.
+    -- ================================================================
+    local UserInputService = game:GetService("UserInputService")
+    local Camera = workspace.CurrentCamera
+    local Device = {
+        IsMobile = false,
+        Mode = "PC",
+        Scale = 1,
+    }
+
+    local function DetectDevice()
+        local viewport = Camera and Camera.ViewportSize or Vector2.new(1280, 720)
+        local touch = UserInputService.TouchEnabled
+        local keyboard = UserInputService.KeyboardEnabled
+        Device.IsMobile = touch and (not keyboard or viewport.X < 900 or viewport.Y < 650)
+        Device.Mode = Device.IsMobile and "Mobile" or "PC"
+        return viewport
+    end
+
+    DetectDevice()
+
+    local function NexusNotify(config)
+        if State.Notifications == false then return end
+        pcall(function() Fluent:Notify(config) end)
+    end
+    State.Notifications = true
+
+        -- ================================================================
+    -- MODERN DYNAMIC PRELOADER — không glow, không khung mờ
+    -- ================================================================
+    local NexusLoader = {}
+    do
+        local CoreGui = game:GetService("CoreGui")
+        local TweenService = game:GetService("TweenService")
+        local RunService = game:GetService("RunService")
+        local host = (gethui and gethui()) or CoreGui
+
+        local ACCENT    = Color3.fromRGB(165, 125, 255)
+        local ACCENT_HI = Color3.fromRGB(200, 170, 255)
+        local CARD_TOP  = Color3.fromRGB(30, 31, 38)
+        local CARD_BOT  = Color3.fromRGB(18, 19, 24)
+        local TEXT      = Color3.fromRGB(240, 240, 245)
+        local TRACK     = Color3.fromRGB(42, 44, 52)
+
+        local CARD_W, CARD_H = 400, 84
+
+        local gui = Instance.new("ScreenGui")
+        gui.Name = "NexusPreloader"
+        gui.IgnoreGuiInset = true
+        gui.ResetOnSpawn = false
+        gui.DisplayOrder = 2147483000
+        gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+        gui.Parent = host
+
+        -- ═══ HOLDER ═══
+        local holder = Instance.new("Frame")
+        holder.AnchorPoint = Vector2.new(0.5, 0.5)
+        holder.Position = UDim2.fromScale(0.5, 0.5)
+        holder.Size = UDim2.fromOffset(8, 8)
+        holder.BackgroundTransparency = 1
+        holder.ZIndex = 5
+        holder.Parent = gui
+
+        -- ═══ SOFT SHADOW (giữ, rất nhẹ) ═══
+        local shadow = Instance.new("Frame")
+        shadow.AnchorPoint = Vector2.new(0.5, 0.5)
+        shadow.Position = UDim2.fromScale(0.5, 0.5)
+        shadow.Size = UDim2.fromOffset(CARD_W + 4, CARD_H + 4)
+        shadow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        shadow.BackgroundTransparency = 1
+        shadow.BorderSizePixel = 0
+        shadow.ZIndex = 4
+        shadow.Parent = holder
+        Instance.new("UICorner", shadow).CornerRadius = UDim.new(0, 24)
+
+        -- ═══ CARD ═══
+        local card = Instance.new("Frame")
+        card.AnchorPoint = Vector2.new(0.5, 0.5)
+        card.Position = UDim2.fromScale(0.5, 0.5)
+        card.Size = UDim2.fromOffset(CARD_W, CARD_H)
+        card.BackgroundColor3 = CARD_BOT
+        card.BackgroundTransparency = 1
+        card.BorderSizePixel = 0
+        card.ClipsDescendants = true
+        card.ZIndex = 5
+        card.Parent = holder
+        Instance.new("UICorner", card).CornerRadius = UDim.new(0, 22)
+
+        local cardStroke = Instance.new("UIStroke", card)
+        cardStroke.Color = Color3.fromRGB(255, 255, 255)
+        cardStroke.Thickness = 1
+        cardStroke.Transparency = 1
+
+        local cardGrad = Instance.new("UIGradient", card)
+        cardGrad.Rotation = 90
+        cardGrad.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, CARD_TOP),
+            ColorSequenceKeypoint.new(1, CARD_BOT),
+        })
+
+        -- ═══ SPINNER ═══
+        local spinnerWrap = Instance.new("Frame")
+        spinnerWrap.Size = UDim2.fromOffset(22, 22)
+        spinnerWrap.Position = UDim2.fromOffset(24, 20)
+        spinnerWrap.BackgroundTransparency = 1
+        spinnerWrap.ZIndex = 6
+        spinnerWrap.Parent = card
+
+        local ring = Instance.new("Frame")
+        ring.Size = UDim2.fromScale(1, 1)
+        ring.BackgroundTransparency = 1
+        ring.ZIndex = 6
+        ring.Parent = spinnerWrap
+        Instance.new("UICorner", ring).CornerRadius = UDim.new(1, 0)
+
+        local ringStroke = Instance.new("UIStroke", ring)
+        ringStroke.Thickness = 2
+        ringStroke.Color = TRACK
+        ringStroke.Transparency = 0.25
+
+        local dot = Instance.new("Frame")
+        dot.Size = UDim2.fromOffset(5, 5)
+        dot.BackgroundColor3 = ACCENT_HI
+        dot.BorderSizePixel = 0
+        dot.ZIndex = 7
+        dot.Parent = spinnerWrap
+        Instance.new("UICorner", dot).CornerRadius = UDim.new(1, 0)
+
+        -- ═══ TEXT ROW ═══
+        local textRow = Instance.new("Frame")
+        textRow.Position = UDim2.fromOffset(56, 0)
+        textRow.Size = UDim2.fromOffset(220, 60)
+        textRow.BackgroundTransparency = 1
+        textRow.ZIndex = 6
+        textRow.Parent = card
+
+        local textLayout = Instance.new("UIListLayout", textRow)
+        textLayout.FillDirection = Enum.FillDirection.Horizontal
+        textLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+        textLayout.SortOrder = Enum.SortOrder.LayoutOrder
+
+        local loadingLbl = Instance.new("TextLabel")
+        loadingLbl.BackgroundTransparency = 1
+        loadingLbl.AutomaticSize = Enum.AutomaticSize.X
+        loadingLbl.Size = UDim2.fromOffset(0, 20)
+        loadingLbl.LayoutOrder = 1
+        loadingLbl.Font = Enum.Font.GothamMedium
+        loadingLbl.TextSize = 15
+        loadingLbl.TextColor3 = TEXT
+        loadingLbl.TextXAlignment = Enum.TextXAlignment.Left
+        loadingLbl.ZIndex = 7
+        loadingLbl.Text = "Loading"
+        loadingLbl.Parent = textRow
+
+        local dotsLbl = Instance.new("TextLabel")
+        dotsLbl.BackgroundTransparency = 1
+        dotsLbl.AutomaticSize = Enum.AutomaticSize.X
+        dotsLbl.Size = UDim2.fromOffset(0, 20)
+        dotsLbl.LayoutOrder = 2
+        dotsLbl.Font = Enum.Font.GothamMedium
+        dotsLbl.TextSize = 15
+        dotsLbl.TextColor3 = ACCENT_HI
+        dotsLbl.TextXAlignment = Enum.TextXAlignment.Left
+        dotsLbl.ZIndex = 7
+        dotsLbl.Text = ""
+        dotsLbl.Parent = textRow
+
+        -- ═══ PERCENT ═══
+        local percentLbl = Instance.new("TextLabel")
+        percentLbl.BackgroundTransparency = 1
+        percentLbl.AnchorPoint = Vector2.new(1, 0)
+        percentLbl.Position = UDim2.new(1, -24, 0, 0)
+        percentLbl.Size = UDim2.fromOffset(80, 60)
+        percentLbl.Font = Enum.Font.GothamBold
+        percentLbl.TextSize = 14
+        percentLbl.TextColor3 = ACCENT_HI
+        percentLbl.TextXAlignment = Enum.TextXAlignment.Right
+        percentLbl.ZIndex = 6
+        percentLbl.Text = "0%"
+        percentLbl.Parent = card
+
+        -- ═══ PROGRESS BAR ═══
+        local track = Instance.new("Frame")
+        track.AnchorPoint = Vector2.new(0.5, 0)
+        track.Position = UDim2.new(0.5, 0, 0, 64)
+        track.Size = UDim2.new(1, -48, 0, 3)
+        track.BackgroundColor3 = TRACK
+        track.BackgroundTransparency = 0.15
+        track.BorderSizePixel = 0
+        track.ZIndex = 6
+        track.Parent = card
+        Instance.new("UICorner", track).CornerRadius = UDim.new(1, 0)
+
+        local fill = Instance.new("Frame")
+        fill.Size = UDim2.new(0, 0, 1, 0)
+        fill.BackgroundColor3 = ACCENT
+        fill.BorderSizePixel = 0
+        fill.ZIndex = 7
+        fill.Parent = track
+        Instance.new("UICorner", fill).CornerRadius = UDim.new(1, 0)
+
+        local fillGrad = Instance.new("UIGradient", fill)
+        fillGrad.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, ACCENT),
+            ColorSequenceKeypoint.new(1, ACCENT_HI),
+        })
+
+        -- ═══ ANIMATIONS ═══
+        local spinnerAngle = 0
+        local spinnerConn
+        spinnerConn = RunService.RenderStepped:Connect(function(dt)
+            if not dot.Parent then
+                if spinnerConn then spinnerConn:Disconnect() end
+                return
+            end
+            spinnerAngle = spinnerAngle + dt * 3.4
+            local cx, cy = 11, 11
+            local r = 8.5
+            dot.Position = UDim2.fromOffset(
+                cx + math.cos(spinnerAngle) * r - 2.5,
+                cy + math.sin(spinnerAngle) * r - 2.5
+            )
+        end)
+
+        task.spawn(function()
+            local patterns = {".", "..", "...", "..", "."}
+            local i = 1
+            while dotsLbl and dotsLbl.Parent do
+                dotsLbl.Text = patterns[i]
+                i = i + 1
+                if i > #patterns then i = 1 end
+                task.wait(0.32)
+            end
+        end)
+
+        -- ═══ ENTRANCE ═══
+        task.wait()
+        task.wait()
+
+        TweenService:Create(holder,
+            TweenInfo.new(0.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut),
+            { Size = UDim2.fromOffset(CARD_W, CARD_H) }
+        ):Play()
+
+        TweenService:Create(shadow,
+            TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            { BackgroundTransparency = 0.6 }
+        ):Play()
+
+        TweenService:Create(card,
+            TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            { BackgroundTransparency = 0 }
+        ):Play()
+
+        TweenService:Create(cardStroke,
+            TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            { Transparency = 0.82 }
+        ):Play()
+
+        -- ═══ API ═══
+        function NexusLoader:Set(text, progress)
+            local p = math.clamp(progress or 0, 0, 1)
+            if percentLbl and percentLbl.Parent then
+                percentLbl.Text = string.format("%d%%", math.floor(p * 100 + 0.5))
+            end
+            if fill and fill.Parent then
+                TweenService:Create(fill,
+                    TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
+                    { Size = UDim2.new(p, 0, 1, 0) }
+                ):Play()
+            end
+        end
+
+        function NexusLoader:Close()
+            if spinnerConn then
+                pcall(function() spinnerConn:Disconnect() end)
+                spinnerConn = nil
+            end
+            if not holder or not holder.Parent then
+                if gui then gui:Destroy() end
+                return
+            end
+
+            TweenService:Create(shadow,
+                TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+                { BackgroundTransparency = 1 }
+            ):Play()
+            TweenService:Create(card,
+                TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+                { BackgroundTransparency = 1 }
+            ):Play()
+            TweenService:Create(cardStroke,
+                TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+                { Transparency = 1 }
+            ):Play()
+
+            local collapse = TweenService:Create(holder,
+                TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut),
+                { Size = UDim2.fromOffset(8, 8) }
+            )
+            collapse.Completed:Connect(function()
+                if gui then gui:Destroy() end
+            end)
+            collapse:Play()
+        end
+
+        NexusLoader:Set("", 0.10)
+        _G.NexusLoaderStart = tick()
+        _G.NexusLoaderMinDuration = tonumber(Config.LoadTime) or 8
+        task.wait(0.12)
+    end
+
+        local Window = Fluent.Window or Fluent:CreateWindow({
+        Title = "Scarlet Ui",
+        SubTitle = "Calm control surface",
+        Icon = "rbxassetid://116983769705",
+        Size = Device.IsMobile and UDim2.fromOffset(640, 470) or UDim2.fromOffset(640, 450),
+        Acrylic = not Device.IsMobile,
+        Theme = "Arctic",
+        TabWidth = 148,
+        Search = true,
+        BackgroundImage = "rbxassetid://13196113628",
+        BackgroundTransparency = 0.35,
+        BackgroundImageTransparency = 0.72,
+        UserInfo = true,
+        UserInfoTitle = LocalPlayer.DisplayName,
+        UserInfoSubtitle = "",
+        UserInfoTop = true,
+        DropdownsOutsideWindow = true,
+    })
+
+        -- Hide UI immediately, before any setup happens
+    if Window and Window.Root then
+        Window.Root.Visible = false
+    end
+    -- Also hide acrylic paint surface and background image during load
+    pcall(function()
+        if Window.AcrylicPaint and Window.AcrylicPaint.Frame then
+            Window.AcrylicPaint.Frame.Visible = false
+        end
+        if Window.BackgroundImage then
+            Window.BackgroundImage.Visible = false
+        end
+        if Library.GUI then
+            Library.GUI.Enabled = false
+        end
+    end)
+    task.wait(0.02)
+
+    -- Real window scaling: resize the root itself while keeping its top-left position.
+    local ScaleBaseSize = Vector2.new(Window.Size.X.Offset, Window.Size.Y.Offset)
+    local CurrentScaleSetting = 10
+    local function ScaleFromSetting(value)
+        value = math.clamp(tonumber(value) or 10, 1, 10)
+        return 0.62 + ((value - 1) / 9) * 0.38
+    end
+    local function ApplyUIScale(value, animate)
+        local target = ScaleFromSetting(value)
+        CurrentScaleSetting = math.clamp(tonumber(value) or 10, 1, 10)
+        -- Cho AutoSave đọc được giá trị scale hiện tại
+        if getgenv then getgenv()._ScarletCurrentScale = CurrentScaleSetting end
+        local targetW = math.floor(ScaleBaseSize.X * target + 0.5)
+        local targetH = math.floor(ScaleBaseSize.Y * target + 0.5)
+        local keepPos = Window.Position
+        Window.Size = UDim2.fromOffset(targetW, targetH)
+        if Window.SizeMotor then
+            if animate then
+                Window.SizeMotor:setGoal({
+                    X = Flipper.Spring.new(targetW, { frequency = 4.9, dampingRatio = 0.95 }),
+                    Y = Flipper.Spring.new(targetH, { frequency = 4.9, dampingRatio = 0.95 }),
+                })
+            else
+                Window.SizeMotor:setGoal({
+                    X = Flipper.Instant.new(targetW),
+                    Y = Flipper.Instant.new(targetH),
+                })
+            end
+        else
+            Window.Root.Size = UDim2.fromOffset(targetW, targetH)
+        end
+        Window.Position = keepPos
+        if Window.PosMotor then
+            Window.PosMotor:setGoal({
+                X = Flipper.Instant.new(keepPos.X.Offset),
+                Y = Flipper.Instant.new(keepPos.Y.Offset),
+            })
+        else
+            Window.Root.Position = keepPos
+        end
+    end
+
+    Library.SetUIScale = function(value, animate)
+        return ApplyUIScale(value, animate ~= false)
+    end
+    Library.GetUIScale = function()
+        return CurrentScaleSetting
+    end
+
+    -- ================================================================
+    -- LIQUID GLASS ENGINE 2.0
+    -- Lightweight animated glass: gradient offset + soft highlight + edge pulse.
+    -- Avoids per-frame position updates for a smoother UI.
+    -- ================================================================
+    local TweenService = game:GetService("TweenService")
+    local LiquidGlass = {
+        Enabled = true,
+        Intensity = 62,
+        Speed = 1,
+        Layer = nil,
+        Reflection = nil,
+        Edge = nil,
+        Tweens = {},
+    }
+
+    local function StopGlassTweens()
+        for _, tween in ipairs(LiquidGlass.Tweens) do
+            pcall(function() tween:Cancel() end)
+        end
+        table.clear(LiquidGlass.Tweens)
+    end
+
+    local function CreateLiquidGlass()
+        local root = Fluent.Window and Fluent.Window.Root
+        if not root then return end
+
+        local old = root:FindFirstChild("LiquidGlassLayer")
+        if old then old:Destroy() end
+
+        local layer = Instance.new("CanvasGroup")
+        layer.Name = "LiquidGlassLayer"
+        layer.Size = UDim2.fromScale(1, 1)
+        layer.BackgroundTransparency = 1
+        layer.BorderSizePixel = 0
+        layer.ZIndex = 0
+        layer.ClipsDescendants = true
+        layer.Parent = root
+
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, 32)
+        corner.Parent = layer
+
+        -- Very soft top glass tint.
+        local tint = Instance.new("Frame")
+        tint.Name = "GlassTint"
+        tint.Size = UDim2.fromScale(1, 1)
+        tint.BackgroundColor3 = Color3.fromRGB(240, 246, 255)
+        tint.BackgroundTransparency = 0.85
+        tint.BorderSizePixel = 0
+        tint.ZIndex = 0
+        tint.Parent = layer
+
+        local tintGradient = Instance.new("UIGradient")
+        tintGradient.Rotation = 115
+        tintGradient.Transparency = NumberSequence.new({
+            NumberSequenceKeypoint.new(0, 0.30),
+            NumberSequenceKeypoint.new(0.28, 0.68),
+            NumberSequenceKeypoint.new(0.52, 0.80),
+            NumberSequenceKeypoint.new(0.78, 0.62),
+            NumberSequenceKeypoint.new(1, 0.92),
+        })
+        tintGradient.Parent = tint
+
+        -- Wide diagonal reflection band.
+        local reflection = Instance.new("Frame")
+        reflection.Name = "Reflection"
+        reflection.AnchorPoint = Vector2.new(0.5, 0.5)
+        reflection.Position = UDim2.fromScale(-0.45, 0.5)
+        reflection.Size = UDim2.new(0.15, 0, 1, 0)
+        reflection.Rotation = 18
+        reflection.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        reflection.BackgroundTransparency = 0.72
+        reflection.BorderSizePixel = 0
+        reflection.ZIndex = 0
+        reflection.Parent = layer
+
+        local reflectionGradient = Instance.new("UIGradient")
+        reflectionGradient.Transparency = NumberSequence.new({
+            NumberSequenceKeypoint.new(0, 1),
+            NumberSequenceKeypoint.new(0.30, 0.995),
+            NumberSequenceKeypoint.new(0.45, 0.30),
+            NumberSequenceKeypoint.new(0.50, 0.00),
+            NumberSequenceKeypoint.new(0.55, 0.30),
+            NumberSequenceKeypoint.new(0.70, 0.995),
+            NumberSequenceKeypoint.new(1, 1),
+        })
+        reflectionGradient.Parent = reflection
+
+        -- Thin top highlight, deliberately subtle.
+        local topGlow = Instance.new("Frame")
+        topGlow.Name = "TopGlow"
+        topGlow.Size = UDim2.new(1, -40, 0, 2)
+        topGlow.Position = UDim2.fromOffset(20, 8)
+        topGlow.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        topGlow.BackgroundTransparency = 0.35
+        topGlow.BorderSizePixel = 0
+        topGlow.ZIndex = 0
+        topGlow.Parent = layer
+
+        local topGradient = Instance.new("UIGradient")
+        topGradient.Transparency = NumberSequence.new({
+            NumberSequenceKeypoint.new(0, 1),
+            NumberSequenceKeypoint.new(0.15, 0.50),
+            NumberSequenceKeypoint.new(0.5, 0.00),
+            NumberSequenceKeypoint.new(0.85, 0.50),
+            NumberSequenceKeypoint.new(1, 1),
+        })
+        topGradient.Parent = topGlow
+
+        -- Bottom subtle glow for extra depth
+        local bottomGlow = Instance.new("Frame")
+        bottomGlow.Name = "BottomGlow"
+        bottomGlow.Size = UDim2.new(1, -60, 0, 1)
+        bottomGlow.Position = UDim2.new(0, 30, 1, -8)
+        bottomGlow.BackgroundColor3 = Color3.fromRGB(200, 220, 255)
+        bottomGlow.BackgroundTransparency = 0.55
+        bottomGlow.BorderSizePixel = 0
+        bottomGlow.ZIndex = 0
+        bottomGlow.Parent = layer
+
+        local bottomGradient = Instance.new("UIGradient")
+        bottomGradient.Transparency = NumberSequence.new({
+            NumberSequenceKeypoint.new(0, 1),
+            NumberSequenceKeypoint.new(0.5, 0.10),
+            NumberSequenceKeypoint.new(1, 1),
+        })
+        bottomGradient.Parent = bottomGlow
+
+        local edge = Instance.new("UIStroke")
+        edge.Name = "GlassEdge"
+        edge.Thickness = 1.5
+        edge.Transparency = 0.22
+        edge.Color = Color3.fromRGB(255, 255, 255)
+        edge.Parent = layer
+
+        local inner = Instance.new("UIStroke")
+        inner.Name = "InnerEdge"
+        inner.Thickness = 1
+        inner.Transparency = 0.68
+        inner.Color = Color3.fromRGB(200, 225, 255)
+        inner.Parent = layer
+		
+
+        LiquidGlass.Layer = layer
+        LiquidGlass.Reflection = reflection
+        LiquidGlass.Edge = edge
+
+        local PlayReflection
+
+        LiquidGlass.SetEnabled = function(enabled)
+            LiquidGlass.Enabled = enabled
+
+            local win = Fluent.Window
+            local ap = win and win.AcrylicPaint
+
+            if enabled then
+                -- ===== GLASS ON =====
+                pcall(function() Acrylic.Enable() end)
+
+                if ap then
+                    if ap.Model then ap.Model.Transparency = 0.965 end
+                    -- Restore normal acrylic visuals
+                    if ap.Frame then
+                        ap.Frame.BackgroundTransparency = 0.9
+                        local bg = ap.Frame:FindFirstChild("Background")
+                        if bg then bg.BackgroundTransparency = 0.45 end
+                        local solid = ap.Frame:FindFirstChild("SolidOverlay")
+                        if solid then solid.BackgroundTransparency = 1 end
+                    end
+                end
+
+                if win and win.BackgroundImage then
+                    win.BackgroundImage.ImageTransparency = win.BackgroundImageTransparency or 0.72
+                end
+
+                layer.Visible = true
+                if PlayReflection then PlayReflection() end
+            else 
+                -- ===== GLASS OFF — SOLID UI =====
+                pcall(function() Acrylic.Disable() end)
+
+                if ap then
+                    if ap.Model then ap.Model.Transparency = 1 end
+                    if ap.Frame then
+                        -- Show the solid overlay — fully opaque
+                        local solid = ap.Frame:FindFirstChild("SolidOverlay")
+                        if solid then
+                            solid.BackgroundTransparency = 0
+                            solid.Visible = true
+                        end
+                    end
+                end
+
+                if win and win.BackgroundImage then
+                    win.BackgroundImage.ImageTransparency = 1
+                end
+
+                StopGlassTweens()
+                layer.Visible = false
+            end
+        end
+
+        LiquidGlass.SetIntensity = function(value)
+            LiquidGlass.Intensity = value
+            local t = math.clamp(value / 100, 0, 1)
+            reflection.BackgroundTransparency = 0.84 - (0.30 * t)
+            tint.BackgroundTransparency = 0.91 - (0.22 * t)
+            topGlow.BackgroundTransparency = 0.58 - (0.30 * t)
+            edge.Transparency = 0.50 - (0.34 * t)
+            inner.Transparency = 0.90 - (0.16 * t)
+
+            -- Tune the real Acrylic surface without SetWindowTransparency,
+            -- which could introduce another opaque layer above the UI.
+            pcall(function()
+                if Fluent.Window and Fluent.Window.AcrylicPaint then
+                    local blur = 0.72 + (0.24 * t)
+                    Fluent.Window.AcrylicPaint.Model.Transparency = 0.985 - (0.055 * t)
+                    Fluent.Window.AcrylicPaint.Frame.Background.BackgroundTransparency = 0.80 - (0.24 * t)
+                    if Acrylic and Acrylic._BaseEffect then
+                        Acrylic._BaseEffect.NearIntensity = blur
+                        Acrylic._BaseEffect.InFocusRadius = 0.5 + (4 * (1 - t))
+                    end
+                end
+            end)
+        end
+
+        LiquidGlass.SetSpeed = function(value)
+            LiquidGlass.Speed = math.clamp(value, 0.25, 3)
+        end
+
+        LiquidGlass.SetIntensity(LiquidGlass.Intensity)
+        LiquidGlass.SetSpeed(LiquidGlass.Speed)
+
+                PlayReflection = function()
+            if not LiquidGlass.Enabled or not reflection.Parent or State.RotateGradient == false then return end
+            reflection.Position = UDim2.fromScale(-0.35, 0.5)
+            local duration = 3.8 / math.max(LiquidGlass.Speed, 0.25)
+            local tween = TweenService:Create(
+                reflection,
+                TweenInfo.new(duration, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut),
+                {Position = UDim2.fromScale(1.35, 0.5)}
+            )
+            table.insert(LiquidGlass.Tweens, tween)
+            tween:Play()
+        end
+
+        local edgeTween = TweenService:Create(
+            edge,
+            TweenInfo.new(2.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
+            {Transparency = 0.39}
+        )
+        table.insert(LiquidGlass.Tweens, edgeTween)
+        edgeTween:Play()
+        LiquidGlass.SetReflectionEnabled = function(enabled)
+            State.RotateGradient = enabled
+            if enabled then
+                PlayReflection()
+            end
+        end
+        PlayReflection()
+
+        return layer
+    end
+
+    CreateLiquidGlass()
+    LiquidGlass.SetEnabled(true)
+    Library.LiquidGlass = LiquidGlass
+    Library.SetLiquidGlass = function(enabled) LiquidGlass.SetEnabled(enabled == true) end
+    Library.SetLiquidGlassIntensity = function(value) LiquidGlass.SetIntensity(value) end
+    Library.SetLiquidGlassSpeed = function(value) LiquidGlass.SetSpeed(value) end
+
+    -- Library runtime: Settings is built in; user/game tabs are consumer-created.
+    local SettingsTab = Window:AddTab({Title = "Settings", Icon = "settings-2"})
+    -- SETTINGS / VANTA-STYLE CONTROL CENTER
+    -- ================================================================
+    local SettingsAppearance = SettingsTab:AddSubTab("Appearance", "palette")
+    local SettingsBehavior = SettingsTab:AddSubTab("Behavior", "sliders")
+    local SettingsAbout = SettingsTab:AddSubTab("About", "info")
+
+    local AppearanceSection = SettingsAppearance:AddSection("APPEARANCE", "palette")
+    AppearanceSection:AddDropdown("ScarletThemePreset", {
+        Title = "Theme preset",
+        Description = "Choose the Scarlet Ui visual profile.",
+        Values = Fluent.Themes,
+        Default = "Arctic",
+        Callback = function(Value)
+            State.Theme = Value
+            pcall(function() Fluent:SetTheme(Value) end)
+        end
+    })
+
+    local InterfaceReady = false
+    local GlassReloading = false
+    local function ReloadInterfaceVisual()
+        if GlassReloading or not InterfaceReady then return end
+        GlassReloading = true
+        task.spawn(function()
+            local wasVisible = Fluent.Window and not Fluent.Window.Minimized
+            pcall(function()
+                if wasVisible and Fluent.Window then
+                    Fluent.Window:Minimize()
+                    task.wait(0.64)
+                end
+
+                StopGlassTweens()
+                if LiquidGlass.Layer then LiquidGlass.Layer:Destroy() end
+                LiquidGlass.Layer = nil
+                                CreateLiquidGlass()
+                LiquidGlass.SetIntensity(State.Glass or 100)
+                LiquidGlass.SetSpeed(0.85 + ((State.Glass or 100) / 100) * 1.05)
+                LiquidGlass.SetEnabled(State.GlassEnabled == true)
+
+                task.wait(0.12)
+                if wasVisible and Fluent.Window and Fluent.Window.Minimized then
+                    Fluent.Window:Minimize()
+                    task.wait(0.70)
+                end
+            end)
+            GlassReloading = false
+        end)
+    end
+
+    AppearanceSection:AddToggle("ScarletGlassEnabled", {
+        Title = "Transparency",
+        Description = "Enable or disable Transparency.",
+        Default = true,
+        Callback = function(Value)
+            State.GlassEnabled = Value == true
+            if InterfaceReady then
+                ReloadInterfaceVisual()
+            else
+                pcall(function() LiquidGlass.SetEnabled(State.GlassEnabled) end)
+            end
+        end
+    })
+
+    
+    AppearanceSection:AddSlider("ScarletUiScale", {
+        Title = "UI scale",
+        Description = "Scale the interface from 1 to 10.",
+        Min = 1, Max = 10, Default = 10, Rounding = 1,
+        Callback = function(Value)
+            local target = ScaleFromSetting(Value)
+            pcall(function()
+                ApplyUIScale(Value, true)
+            end)
+        end
+    })
+
+    local BehaviorSection = SettingsBehavior:AddSection("BEHAVIOR", "sliders")
+    BehaviorSection:AddToggle("VantaLockWindow", {
+        Title = "Lock window position",
+        Description = "Prevent accidental dragging of the main window.",
+        Default = false,
+        Callback = function(Value)
+            State.DragLocked = Value
+            if Fluent.Window then Fluent.Window.DragLocked = Value end
+        end
+    })
+    BehaviorSection:AddToggle("VantaReduceMotion", {
+        Title = "Reduce motion",
+        Description = "Shorten tab and subtab transitions.",
+        Default = false,
+        Callback = function(Value)
+            State.ReduceMotion = Value
+            if Fluent.Window then Fluent.Window.ReduceMotion = Value end
+        end
+    })
+    BehaviorSection:AddToggle("VantaNotifications", {
+        Title = "Notifications",
+        Description = "Allow Scarlet Ui status and test notifications.",
+        Default = true,
+        Callback = function(Value)
+            State.Notifications = Value
+            Fluent.NotificationsEnabled = Value
+        end
+    })
+
+    local WhatsNewSection = SettingsAbout:AddSection("WHAT'S NEW", "sparkles")
+    WhatsNewSection:AddButton({
+        Title = "Quick search",
+        Description = "Open the full-screen search surface.",
+        Callback = function() pcall(function() Window:OpenSearch() end) end
+    })
+    WhatsNewSection:AddParagraph({
+        Title = "Dynamic Island",
+        Content = "Tap the island to hide or reopen Scarlet Ui. The expanded island shows ONLINE status and live FPS."
+    })
+
+    local InfoSection = SettingsAbout:AddSection("SCARLET UI", "info")
+    InfoSection:AddParagraph({
+        Title = "SCARLET UI",
+        Content = "Vanta-inspired settings • full-screen search • spring transitions • Dynamic Island • live FPS / ms"
+    })
+
+    State.Glass = 100
+    State.GlassEnabled = true
+    State.Notifications = true
+    State.DragLocked = false
+    State.ReduceMotion = false
+    Fluent.NotificationsEnabled = true
+    if Fluent.Window then
+        Fluent.Window.DragLocked = false
+        Fluent.Window.ReduceMotion = false
+    end
+    ApplyUIScale(10, false)
+        pcall(function()
+        LiquidGlass.SetEnabled(true)
+        LiquidGlass.SetIntensity(100)
+        LiquidGlass.SetSpeed(1.65)
+        if Window.SetBackgroundImageTransparency then
+            Window:SetBackgroundImageTransparency(0.92 - (0.58 * 1.0))
+        end
+    end)
+
+    -- ================================================================
+    -- GLOBAL VANTA-STYLE SEARCH OVERLAY
+    -- Full-screen instead of the tiny sidebar search. Uses the native
+    -- AllElements registry, fuzzy-ish scoring, tab jumping, Enter/Esc,
+    -- and the same soft glass language as the rest of NEXUS.
+    -- ================================================================
+    local function BuildGlobalSearch()
+        local TweenService2 = game:GetService("TweenService")
+        local CoreGui = game:GetService("CoreGui")
+        local host = (gethui and gethui()) or CoreGui
+        local gui = Instance.new("ScreenGui")
+        gui.Name = "NexusGlobalSearch"
+        gui.IgnoreGuiInset = true
+        gui.ResetOnSpawn = false
+        gui.DisplayOrder = 2147482990
+        gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+        gui.Enabled = true
+        gui.Parent = host
+        Library.NexusGlobalSearchGui = gui
+
+        local overlay = Instance.new("Frame")
+        overlay.Size = UDim2.fromScale(1, 1)
+        overlay.BackgroundColor3 = Color3.fromRGB(4, 5, 8)
+        overlay.BackgroundTransparency = 1
+        overlay.BorderSizePixel = 0
+        overlay.Visible = false
+        overlay.Parent = gui
+
+        local dismiss = Instance.new("TextButton")
+        dismiss.Size = UDim2.fromScale(1, 1)
+        dismiss.BackgroundTransparency = 1
+        dismiss.Text = ""
+        dismiss.AutoButtonColor = false
+        dismiss.Parent = overlay
+
+        local panel = Instance.new("Frame")
+        panel.AnchorPoint = Vector2.new(0.5, 0)
+        panel.Position = UDim2.new(0.5, 0, 0, 78)
+        panel.Size = Device.IsMobile and UDim2.new(0.94, 0, 0, 360) or UDim2.new(0.92, 0, 0, 430)
+        panel.BackgroundColor3 = Color3.fromRGB(17, 18, 23)
+        panel.BackgroundTransparency = 0.08
+        panel.BorderSizePixel = 0
+        panel.ClipsDescendants = true
+        panel.Parent = overlay
+        Instance.new("UICorner", panel).CornerRadius = UDim.new(0, 22)
+        local ps = Instance.new("UIStroke", panel)
+        ps.Color = Color3.fromRGB(190, 165, 255)
+        ps.Transparency = 0.78
+        ps.Thickness = 1
+
+        local header = Instance.new("Frame")
+        header.Size = UDim2.new(1, 0, 0, 62)
+        header.BackgroundColor3 = Color3.fromRGB(24, 25, 32)
+        header.BackgroundTransparency = 0.15
+        header.BorderSizePixel = 0
+        header.Parent = panel
+
+        local icon = Instance.new("ImageLabel")
+        icon.Size = UDim2.fromOffset(18, 18)
+        icon.Position = UDim2.fromOffset(20, 22)
+        icon.BackgroundTransparency = 1
+        icon.Image = Fluent:GetIcon("search") or "rbxassetid://10734943674"
+        icon.ImageColor3 = Color3.fromRGB(190, 165, 255)
+        icon.Parent = header
+
+        local input = Instance.new("TextBox")
+        input.BackgroundTransparency = 1
+        input.Position = UDim2.fromOffset(50, 0)
+        input.Size = UDim2.new(1, -150, 1, 0)
+        input.Font = Enum.Font.GothamMedium
+        input.TextSize = 15
+        input.TextColor3 = Color3.fromRGB(245, 245, 250)
+        input.PlaceholderText = "Search features, toggles, sections..."
+        input.PlaceholderColor3 = Color3.fromRGB(120, 122, 132)
+        input.ClearTextOnFocus = false
+        input.TextXAlignment = Enum.TextXAlignment.Left
+        input.Parent = header
+
+        local esc = Instance.new("TextButton")
+        esc.AnchorPoint = Vector2.new(1, 0.5)
+        esc.Position = UDim2.new(1, -18, 0.5, 0)
+        esc.Size = UDim2.fromOffset(48, 24)
+        esc.BackgroundColor3 = Color3.fromRGB(40, 41, 49)
+        esc.BackgroundTransparency = 0.15
+        esc.Font = Enum.Font.GothamBold
+        esc.TextSize = 10
+        esc.TextColor3 = Color3.fromRGB(165, 166, 176)
+        esc.Text = Device.IsMobile and "CLOSE" or "ESC"
+        esc.AutoButtonColor = false
+        esc.Parent = header
+        Instance.new("UICorner", esc).CornerRadius = UDim.new(0, 7)
+        esc.Active = true
+
+        local results = Instance.new("ScrollingFrame")
+        results.Position = UDim2.fromOffset(0, 62)
+        results.Size = UDim2.new(1, 0, 1, -62)
+        results.BackgroundTransparency = 1
+        results.BorderSizePixel = 0
+        results.ScrollBarThickness = 3
+        results.ScrollBarImageTransparency = 0.5
+        results.CanvasSize = UDim2.new()
+        results.Parent = panel
+        local list = Instance.new("UIListLayout", results)
+        list.Padding = UDim.new(0, 4)
+        list.SortOrder = Enum.SortOrder.LayoutOrder
+        local pad = Instance.new("UIPadding", results)
+        pad.PaddingTop = UDim.new(0, 10); pad.PaddingBottom = UDim.new(0, 10)
+        pad.PaddingLeft = UDim.new(0, 10); pad.PaddingRight = UDim.new(0, 10)
+
+        local empty = Instance.new("TextLabel")
+        empty.BackgroundTransparency = 1
+        empty.Size = UDim2.new(1, -30, 0, 50)
+        empty.Font = Enum.Font.Gotham
+        empty.TextSize = 12
+        empty.TextColor3 = Color3.fromRGB(115, 117, 126)
+        empty.Text = "Search Scarlet Ui controls"
+        empty.Parent = results
+
+        local open = false
+        local rows = {}
+        local matches = {}
+        local active = 1
+
+        local function getElementLocation(element, data)
+            if data and data.tabIndex then
+                return data.tabIndex, data.subTabIndex, data.tabName, data.subTabName
+            end
+            if not element then return nil end
+            for tabIndex, tab in ipairs(Window.Tabs or {}) do
+                for subIndex, subTab in pairs(tab.SubTabs or {}) do
+                    local subContainer = subTab.Container
+                    local subAnim = subTab.ContainerAnim
+                    if subContainer and (element == subContainer or element:IsDescendantOf(subContainer)) then
+                        return tabIndex, subIndex, tab.Name, subTab.Name
+                    end
+                    if subAnim and (element == subAnim or element:IsDescendantOf(subAnim)) then
+                        return tabIndex, subIndex, tab.Name, subTab.Name
+                    end
+                end
+                if tab.ContainerFrame and (element == tab.ContainerFrame or element:IsDescendantOf(tab.ContainerFrame)) then
+                    return tabIndex, nil, tab.Name, nil
+                end
+                if tab.ContainerAnim and (element == tab.ContainerAnim or element:IsDescendantOf(tab.ContainerAnim)) then
+                    return tabIndex, nil, tab.Name, nil
+                end
+            end
+            return nil
+        end
+        local function score(name, q)
+            name = string.lower(name or "")
+            q = string.lower(q or "")
+            if q == "" then return 1 end
+            local direct = string.find(name, q, 1, true)
+            if direct then return direct == 1 and 3 or 2 end
+            local cursor = 1
+            for i = 1, #q do
+                local pos = string.find(name, q:sub(i, i), cursor, true)
+                if not pos then return 0 end
+                cursor = pos + 1
+            end
+            return 1
+        end
+
+        local function clearRows()
+            for _, r in ipairs(rows) do r:Destroy() end
+            table.clear(rows)
+        end
+
+        local function selectMatch(index)
+            local data = matches[index]
+            if not data or not data.element then return end
+
+            open = false
+            pcall(function() input:ReleaseFocus() end)
+            TweenService2:Create(overlay, TweenInfo.new(0.13, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                BackgroundTransparency = 1
+            }):Play()
+            overlay.Visible = false
+
+            local targetElement = data.element
+            local targetTab = tonumber(data.tabIndex)
+            local targetSubTab = tonumber(data.subTabIndex)
+
+            task.spawn(function()
+                -- Reveal any hidden ancestors before navigation so the result is always reachable.
+                local cursor = targetElement
+                while cursor and cursor ~= Window.Root do
+                    if cursor:IsA("GuiObject") then cursor.Visible = true end
+                    cursor = cursor.Parent
+                end
+
+                if targetTab and Window.Tabs[targetTab] then
+                    pcall(function() Window:SelectTab(targetTab) end)
+                    task.wait(Window.ReduceMotion and 0.24 or 0.38)
+                end
+
+                if targetTab and targetSubTab and Window.Tabs[targetTab] then
+                    pcall(function() Window.Tabs[targetTab]:SelectSubTab(targetSubTab) end)
+                    task.wait(Window.ReduceMotion and 0.22 or 0.34)
+                end
+
+                if not targetElement or not targetElement.Parent then return end
+
+                local scroll = targetElement:FindFirstAncestorOfClass("ScrollingFrame")
+                if scroll then
+                    task.wait()
+                    local y = targetElement.AbsolutePosition.Y - scroll.AbsolutePosition.Y + scroll.CanvasPosition.Y - 22
+                    local targetY = math.max(0, y)
+                    pcall(function()
+                        TweenService2:Create(
+                            scroll,
+                            TweenInfo.new(0.52, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
+                            {CanvasPosition = Vector2.new(scroll.CanvasPosition.X, targetY)}
+                        ):Play()
+                    end)
+                end
+
+                pcall(function()
+                    local stroke = targetElement:FindFirstChildOfClass("UIStroke")
+                    local old = targetElement.BackgroundTransparency
+                    local base = tonumber(old) or 0.86
+                    TweenService2:Create(targetElement, TweenInfo.new(0.18, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                        BackgroundTransparency = math.max(0.10, base - 0.34)
+                    }):Play()
+                    if stroke then
+                        local oldStroke = stroke.Transparency
+                        TweenService2:Create(stroke, TweenInfo.new(0.16, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Transparency = 0.10}):Play()
+                        task.delay(0.18, function()
+                            if stroke and stroke.Parent then
+                                TweenService2:Create(stroke, TweenInfo.new(0.46, Enum.EasingStyle.Quint, Enum.EasingDirection.InOut), {Transparency = oldStroke}):Play()
+                            end
+                        end)
+                    end
+                    task.delay(0.18, function()
+                        if targetElement and targetElement.Parent then
+                            TweenService2:Create(targetElement, TweenInfo.new(0.46, Enum.EasingStyle.Quint, Enum.EasingDirection.InOut), {BackgroundTransparency = base}):Play()
+                        end
+                    end)
+                end)
+            end)
+        end
+
+        local function paint()
+            for i, row in ipairs(rows) do
+                local on = i == active
+                row.BackgroundTransparency = on and 0.10 or 0.42
+                local stroke = row:FindFirstChildOfClass("UIStroke")
+                if stroke then stroke.Transparency = on and 0.22 or 0.82 end
+            end
+        end
+
+        local function refresh()
+            clearRows()
+            table.clear(matches)
+            local q = input.Text or ""
+            local scored = {}
+            local featuredTitles = {
+                ["Test Toggle"] = 100,
+                ["Test Slider"] = 99,
+                ["Master Animations"] = 98,
+                ["Theme Preset"] = 97,
+                ["Glass"] = 96,
+                ["Glass intensity"] = 95,
+                ["UI scale"] = 94,
+                ["Monitor Events"] = 93,
+                ["Run Diagnostics"] = 92,
+                ["Lock window position"] = 91,
+                ["Reduce motion"] = 90,
+            }
+            local searchEntries = {}
+            for element, data in pairs(Window.AllElements or {}) do
+                searchEntries[element] = data
+            end
+            for _, entry in ipairs(Window.Searchables or {}) do
+                if entry and entry.Frame and entry.Frame.Parent and not searchEntries[entry.Frame] then
+                    searchEntries[entry.Frame] = {
+                        title = entry.Name or entry.Title,
+                        type = entry.Kind or entry.Type,
+                        description = entry.Description or entry.Desc,
+                        tabIndex = entry.TabIndex,
+                        subTabIndex = entry.SubTabIndex,
+                        tabName = entry.TabName,
+                        subTabName = entry.SubTabName,
+                    }
+                end
+            end
+            for element, data in pairs(searchEntries) do
+                if element and element.Parent then
+                    local name = tostring(data.title or "")
+                    local desc = tostring(data.description or "")
+                    local tabIndex, subTabIndex, tabName, subTabName = getElementLocation(element, data)
+                    if not tabIndex and data.section and data.section.Parent then
+                        tabIndex, subTabIndex, tabName, subTabName = getElementLocation(data.section)
+                    end
+                    local locationText = tostring(tabName or "") .. " " .. tostring(subTabName or "")
+                    local sc
+                    if q == "" then
+                        sc = featuredTitles[name] or 0
+                    else
+                        local titleScore = score(name, q)
+                        local descScore = score(desc, q) * 0.72
+                        local locationScore = score(locationText, q) * 0.86
+                        local exactBoost = (string.lower(name) == string.lower(q)) and 3.5 or 0
+                        sc = math.max(titleScore + exactBoost, descScore, locationScore)
+                    end
+                    if sc > 0 then
+                        table.insert(scored, {
+                            element=element, title=name, desc=desc, score=sc,
+                            tabIndex=tabIndex, subTabIndex=subTabIndex,
+                            tabName=tabName, subTabName=subTabName, type=data.type
+                        })
+                    end
+                end
+            end
+            table.sort(scored, function(a,b)
+                if a.score == b.score then return a.title < b.title end
+                return a.score > b.score
+            end)
+            local limit = math.min(#scored, 45)
+            for i = 1, limit do
+                local d = scored[i]
+                matches[i] = d
+                local row = Instance.new("TextButton")
+                row.Size = UDim2.new(1, 0, 0, 54)
+                row.BackgroundColor3 = Color3.fromRGB(30, 31, 39)
+                row.BackgroundTransparency = 0.42
+                row.BorderSizePixel = 0
+                row.AutoButtonColor = false
+                row.Text = ""
+                row.Parent = results
+                Instance.new("UICorner", row).CornerRadius = UDim.new(0, 12)
+                local rs = Instance.new("UIStroke", row)
+                rs.Color = Color3.fromRGB(180, 150, 255)
+                rs.Transparency = 0.82
+                local t = Instance.new("TextLabel")
+                t.BackgroundTransparency = 1
+                t.Position = UDim2.fromOffset(14, 7)
+                t.Size = UDim2.new(1, -28, 0, 21)
+                t.Font = Enum.Font.GothamMedium
+                t.TextSize = 13
+                t.TextColor3 = Color3.fromRGB(235, 235, 242)
+                t.Text = d.title ~= "" and d.title or "Untitled control"
+                t.TextXAlignment = Enum.TextXAlignment.Left
+                t.Parent = row
+                local st = Instance.new("TextLabel")
+                st.BackgroundTransparency = 1
+                st.Position = UDim2.fromOffset(14, 29)
+                st.Size = UDim2.new(1, -28, 0, 17)
+                st.Font = Enum.Font.Gotham
+                st.TextSize = 10
+                st.TextColor3 = Color3.fromRGB(125, 127, 138)
+                local location = d.tabName or "NEXUS"
+                if d.subTabName then location = location .. "  /  " .. d.subTabName end
+                st.Text = tostring(d.type or "Element") .. "  •  " .. location .. (d.desc ~= "" and ("  •  " .. d.desc) or "")
+                st.TextTruncate = Enum.TextTruncate.AtEnd
+                st.TextXAlignment = Enum.TextXAlignment.Left
+                st.Parent = row
+                row.MouseEnter:Connect(function() active = i; paint() end)
+                row.MouseButton1Click:Connect(function() active = i; selectMatch(i) end)
+                table.insert(rows, row)
+            end
+            empty.Visible = limit == 0
+            if limit == 0 and q ~= "" then empty.Text = "No matching Scarlet Ui controls" end
+            active = math.clamp(active, 1, math.max(1, limit))
+            paint()
+        end
+
+        local function openSearch()
+            if open then return end
+            open = true
+            overlay.Visible = true
+            overlay.BackgroundTransparency = 1
+            panel.Position = UDim2.new(0.5, 0, 0, 68)
+            input.Text = ""
+            refresh()
+            TweenService2:Create(overlay, TweenInfo.new(0.20, Enum.EasingStyle.Quart), {BackgroundTransparency = 0.34}):Play()
+            TweenService2:Create(panel, TweenInfo.new(0.32, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Position = UDim2.new(0.5, 0, 0, 82)}):Play()
+            task.defer(function() pcall(function() input:CaptureFocus() end) end)
+        end
+
+        local function closeSearch()
+            if not open then return end
+            open = false
+            pcall(function() input:ReleaseFocus() end)
+            TweenService2:Create(overlay, TweenInfo.new(0.16), {BackgroundTransparency = 1}):Play()
+            local tw = TweenService2:Create(panel, TweenInfo.new(0.22, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {Position = UDim2.new(0.5, 0, 0, 68)})
+            tw.Completed:Connect(function() if not open then overlay.Visible = false end end)
+            tw:Play()
+        end
+
+        input:GetPropertyChangedSignal("Text"):Connect(refresh)
+        dismiss.MouseButton1Click:Connect(closeSearch)
+        Window.OpenSearch = openSearch
+        Window.CloseSearch = closeSearch
+        Window.OpenGlobalSearch = openSearch
+
+        esc.MouseButton1Click:Connect(closeSearch)
+
+        -- Keep Search in its original Fluent sidebar position. On both PC
+        -- and mobile, touching/clicking/focusing that field opens the
+        -- full-screen surface instead of searching only inside the sidebar.
+        -- The sidebar Search is a LAUNCHER, not a second search box.
+        -- Keep it visually in the original Fluent position, but intercept
+        -- mouse/touch activation and open the full-screen search surface.
+        pcall(function()
+            if Window.SearchInput and Window.SearchFrame then
+                local sidebarInput = Window.SearchInput
+                sidebarInput.Text = ""
+                sidebarInput.TextEditable = false
+                sidebarInput.Active = false
+
+                local launcher = Instance.new("TextButton")
+                launcher.Name = "GlobalSearchLauncher"
+                launcher.Size = UDim2.fromScale(1, 1)
+                launcher.Position = UDim2.fromScale(0, 0)
+                launcher.BackgroundTransparency = 1
+                launcher.BorderSizePixel = 0
+                launcher.Text = ""
+                launcher.AutoButtonColor = false
+                launcher.Active = true
+                launcher.Selectable = false
+                launcher.ZIndex = 50
+                launcher.Parent = Window.SearchFrame
+
+                launcher.Activated:Connect(function()
+                    openSearch()
+                end)
+
+                Window.GlobalSearchLauncher = launcher
+            end
+        end)
+
+        UserInputService.InputBegan:Connect(function(inp, gp)
+            if inp.UserInputType ~= Enum.UserInputType.Keyboard then return end
+            if not open then
+                return
+            else
+                if inp.KeyCode == Enum.KeyCode.Escape then
+                    closeSearch()
+                elseif inp.KeyCode == Enum.KeyCode.Return then
+                    selectMatch(active)
+                elseif inp.KeyCode == Enum.KeyCode.Down then
+                    active = math.min(active + 1, math.max(1, #matches)); paint()
+                elseif inp.KeyCode == Enum.KeyCode.Up then
+                    active = math.max(active - 1, 1); paint()
+                end
+            end
+        end)
+    end
+    BuildGlobalSearch()
+    -- Keep the native Search field where Fluent/Syde users expect it.
+    -- Its interaction is now only a launcher; the actual search is global.
+    pcall(function()
+        if Window.SearchInput then
+            Window.SearchInput.PlaceholderText = Device.IsMobile and "Search" or "Search"
+        end
+    end)
+
+    -- Create minimizer only after the entire UI tree exists.
+    -- Failure here must never abort the dashboard itself.
+    pcall(function()
+        Fluent:CreateMinimizer({
+            Icon = "rbxassetid://116068983769705",
+            Acrylic = true,
+            Corner = 24,
+            Draggable = true,
+            Title = "Scarlet Ui",
+        })
+    end)
+
+    if Fluent.Window and Fluent.Window.Root then
+        pcall(function()
+            Fluent.Window.Root.Visible = false
+            Fluent.Window.Minimized = true
+        end)
+    end
+
+    -- HIDE EVERYTHING DURING LOAD (icon + island)
+    pcall(function()
+        if Fluent.Minimizer then
+            Fluent.Minimizer.Visible = false
+        end
+    end)
+
+    task.wait(0.30)
+
+        if Config.LoadUI ~= false then
+    local _elapsed = tick() - (_G.NexusLoaderStart or tick())
+    local _remaining = math.max(0, (tonumber(Config.LoadTime) or 8) - _elapsed)
+
+    NexusLoader:Set("Initializing modules", 0.72)
+
+    if _remaining > 0 then
+        local _steps = 6
+        local _msgs = {
+            "Loading resources",
+            "Mounting interface",
+            "Connecting controls",
+            "Booting motion engine",
+            "Finalizing layout",
+            "Almost ready",
+        }
+        for _i = 1, _steps do
+            task.wait(_remaining / _steps)
+            local _p = 0.72 + (0.24 * (_i / _steps))
+            NexusLoader:Set(_msgs[_i] or "Loading", math.min(_p, 0.96))
+        end
+    end
+
+     NexusLoader:Set("Ready", 1)
+    task.wait(0.35)
+    NexusLoader:Close()
+
+        -- Enable GUI only now
+    pcall(function()
+        if Library.GUI then
+            Library.GUI.Enabled = true
+        end
+        -- Restore acrylic paint visibility
+        if Window.AcrylicPaint and Window.AcrylicPaint.Frame then
+            Window.AcrylicPaint.Frame.Visible = true
+        end
+        if Window.BackgroundImage then
+            Window.BackgroundImage.Visible = true
+        end
+    end)
+
+    -- Enable Acrylic only now (after load)
+    if Library._AcrylicPending then
+        pcall(function()
+            Acrylic.init()
+            Library._AcrylicPending = false
+        end)
+    end
+    task.wait(0.05)
+
+    -- Show island
+    pcall(function()
+        if Fluent.Minimizer then
+            Fluent.Minimizer.Visible = true
+        end
+        if Fluent.MinimizerController and Fluent.MinimizerController.AnimateIsland then
+            Fluent.MinimizerController.AnimateIsland(true)
+        end
+    end)
+    task.wait(0.45)
+
+        if Fluent.Window and Fluent.Window.Minimized then
+        task.wait(0.30)
+        pcall(function() Fluent.Window:Minimize() end)
+    end
+    InterfaceReady = true
+
+    -- FIX: Reload glass layer once after UI is fully expanded so all tweens
+    -- and transparencies start from a clean state (prevents initial flicker).
+    task.spawn(function()
+        task.wait(0.85)  -- wait for expand animation to finish
+        pcall(function()
+            StopGlassTweens()
+            if LiquidGlass.Layer then LiquidGlass.Layer:Destroy() end
+            LiquidGlass.Layer = nil
+            CreateLiquidGlass()
+            LiquidGlass.SetEnabled(State.GlassEnabled == true)
+            LiquidGlass.SetIntensity(State.Glass or 100)
+            LiquidGlass.SetSpeed(1.65)
+            if Window.SetBackgroundImageTransparency then
+                Window:SetBackgroundImageTransparency(0.92 - (0.58 * 1.0))
+            end
+        end)
+    end)
+
+    -- No per-frame UI text updates. Constant SetDesc calls can trigger layout
+    -- recalculation in some executors and make rows appear to blink.
+     
+    Fluent:Notify({
+        Title = "SCARLET UI // READY",
+        Content = "Scarlet Ui initialized.",
+        SubContent = "Use the tabs and Settings to test the interface.",
+        Duration = 4
+    })    end
+    if Config.AutoSave then
+        local HttpService = game:GetService("HttpService")
+        local LP = game:GetService("Players").LocalPlayer
+        local AutoSave = {
+            Folder = Config.AutoSaveFolder or "ScarletAutoSave",
+            ConfigName = Config.AutoSaveName or ("autosave_" .. LP.UserId),
+            MetaFile = (Config.AutoSaveFolder or "ScarletAutoSave") .. "/meta_" .. LP.UserId .. ".json",
+            Interval = tonumber(Config.AutoSaveInterval) or 30,
+            Debounce = tonumber(Config.AutoSaveDebounce) or 1.2,
+            Enabled = true,
+            _suppress = true,
+            _ready = false,
+            _lastSave = math.huge,
+            _dirty = false,
+            _dirtyAt = 0,
+        }
+        Library.AutoSave = AutoSave
+
+        pcall(function()
+            if isfolder and makefolder and not isfolder(AutoSave.Folder) then
+                makefolder(AutoSave.Folder)
+            end
+        end)
+
+        function AutoSave:Save()
+            if not self.Enabled or not self._ready or self._suppress then return end
+            pcall(function() SaveManager:Save(self.ConfigName) end)
+            pcall(function()
+                if writefile and HttpService then
+                    if isfolder and makefolder and not isfolder(self.Folder) then
+                        makefolder(self.Folder)
+                    end
+                    local meta = {theme = Library.Theme}
+                    if Library.Window then
+                        meta.windowPos = {Library.Window.Position.X.Offset, Library.Window.Position.Y.Offset}
+                        meta.windowSize = {Library.Window.Size.X.Offset, Library.Window.Size.Y.Offset}
+                    end
+                    writefile(self.MetaFile, HttpService:JSONEncode(meta))
+                end
+            end)
+            self._dirty = false
+            self._lastSave = tick()
+        end
+
+        function AutoSave:MarkDirty()
+            if self._ready and not self._suppress and self.Enabled then
+                self._dirty = true
+                self._dirtyAt = tick()
+            end
+        end
+
+        SaveManager:SetLibrary(Library)
+        SaveManager:SetFolder(AutoSave.Folder)
+        SaveManager:IgnoreThemeSettings()
+
+        task.spawn(function()
+            pcall(function() SaveManager:Load(AutoSave.ConfigName) end)
+            task.wait(0.8)
+            AutoSave._suppress = false
+            AutoSave._ready = true
+            while Library and not Library.Unloaded do
+                task.wait(0.4)
+                local now = tick()
+                if AutoSave._dirty and now - AutoSave._dirtyAt >= AutoSave.Debounce then
+                    AutoSave:Save()
+                elseif now - AutoSave._lastSave >= AutoSave.Interval then
+                    AutoSave:Save()
+                end
+            end
+        end)
+
+        pcall(function()
+            game:BindToClose(function()
+                AutoSave._suppress = false
+                AutoSave._ready = true
+                AutoSave:Save()
+            end)
+        end)
+        if getgenv then getgenv().ScarletAutoSave = AutoSave end
+    end
+end
 
 return Library, SaveManager, InterfaceManager, Mobile
