@@ -19,7 +19,7 @@ Ophyn.new({
 
     discord_link = "your invite link",
 
-    Discord = "true",a
+    Discord = "true",
     Website = "false",
 
     SupportedGames = {
