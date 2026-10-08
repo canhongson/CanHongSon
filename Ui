@@ -9223,6 +9223,10 @@ Library.CreateWindow = function(self, Config)
 
 	Library.MinimizeKey = Enum.KeyCode.Unknown
 
+	-- Defaults for Fluent-compatible CreateWindow calls
+	Config.Size = Config.Size or UDim2.fromOffset(580, 460)
+	Config.TabWidth = Config.TabWidth or 160
+
 	Library.UseAcrylic = Config.Acrylic or false
 
 	Library.Acrylic = Config.Acrylic or false
