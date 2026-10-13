@@ -11202,91 +11202,320 @@ local function CreateScarletShowcase()
     if Library.Window or ScarletEnvironment.SCARLET_ISLAND_DEMO == false then
         return
     end
+
     local ok, err = pcall(function()
         local Window = Library:CreateWindow({
-            Title = "Scarlet Island",
-            SubTitle = "Dynamic control surface",
+            Title = "Scarlet Island  /  " .. tostring(Library.Version or "Fluent Core"),
+            SubTitle = "Component Laboratory",
             Icon = "rbxassetid://116983769705",
-            Size = UDim2.fromOffset(690, 470),
+            Size = UDim2.fromOffset(720, 520),
             Acrylic = true,
             Theme = "Scarlet",
-            TabWidth = 160,
+            TabWidth = 155,
             Search = true,
             DropdownsOutsideWindow = true,
             MinimizeKey = Enum.KeyCode.Unknown,
             UserInfo = true,
             UserInfoTitle = LocalPlayer.DisplayName,
-            UserInfoSubtitle = "SCARLET CORE ONLINE",
+            UserInfoSubtitle = "SCARLET LAB / READY",
             UserInfoTop = true,
         })
         if not Window then return end
-        local Home = Window:AddTab({ Title = "Home", Icon = "activity" })
-        local ComponentsTab = Window:AddTab({ Title = "Components", Icon = "sliders-horizontal" })
-        local SettingsTab = Window:AddTab({ Title = "Settings", Icon = "settings" })
 
-        local Overview = Home:AddSection("SCARLET CORE", "activity")
-        Overview:AddParagraph({
-            Title = "SCARLET ISLAND  /  READY",
-            Content = "Fluent component system loaded with Scarlet theme, acrylic surfaces and Dynamic Island launcher."
+        local Tabs = {
+            Main = Window:AddTab({ Title = "Main", Icon = "house" }),
+            Controls = Window:AddTab({ Title = "Controls", Icon = "sliders-horizontal" }),
+            Interaction = Window:AddTab({ Title = "Interaction", Icon = "mouse-pointer-click" }),
+            Appearance = Window:AddTab({ Title = "Appearance", Icon = "palette" }),
+            Subtabs = Window:AddTab({ Title = "Subtabs", Icon = "layout-grid" }),
+            Settings = Window:AddTab({ Title = "Settings", Icon = "settings" }),
+        }
+        local Options = Library.Options
+
+        -- MAIN / STATUS ------------------------------------------------------
+        local Intro = Tabs.Main:AddSection("WELCOME TO THE LAB", "activity")
+        Intro:AddParagraph({
+            Title = "Scarlet Island UI",
+            Content = "This is a live component test bench built on the Fluent component system. Try each control, change tabs, use search, resize the window, and watch the output log.\nNo game actions are performed by these demo controls.",
         })
-        Overview:AddButton({
-            Title = "Test notification",
-            Description = "Checks the built-in notification service.",
+        Intro:AddButton({
+            Title = "Send test notification",
+            Description = "Exercises title, content, subcontent and duration.",
             Callback = function()
-                Library:Notify({ Title = "Scarlet Island", Content = "Notification system is working.", Duration = 3 })
+                Library:Notify({ Title = "Scarlet notification", Content = "The notification layer is responding.", SubContent = "Component Laboratory", Duration = 5 })
             end,
         })
-        Overview:AddToggle("ScarletDemoAnimations", {
-            Title = "Interface animations",
-            Description = "Example state toggle using the native Fluent control.",
+        Intro:AddButton({
+            Title = "Open confirmation dialog",
+            Description = "Tests dialog layout and both callback buttons.",
+            Callback = function()
+                Window:Dialog({
+                    Title = "Confirm interaction",
+                    Content = "This is a demo dialog. Choose an action to test the callbacks.",
+                    Buttons = {
+                        { Title = "Confirm", Callback = function() Library:Notify({ Title = "Dialog", Content = "Confirm callback fired.", Duration = 3 }) end },
+                        { Title = "Cancel", Callback = function() Library:Notify({ Title = "Dialog", Content = "Cancel callback fired.", Duration = 3 }) end },
+                    },
+                })
+            end,
+        })
+        Intro:AddToggle("ScarletLab_Animations", {
+            Title = "Demo event toggle",
+            Description = "Changes state and reports it without affecting gameplay.",
             Default = true,
             Callback = function(value)
-                Library:Notify({ Title = "Motion", Content = value and "Enabled" or "Disabled", Duration = 2 })
+                print("[Scarlet Lab] Toggle:", value)
+            end,
+        })
+        Intro:AddParagraph({
+            Title = "Quick checklist",
+            Content = "1. Click buttons and dialog choices.\n2. Change each control on the Controls tab.\n3. Try keybind modes and color transparency.\n4. Search for a control by its title.\n5. Open Settings to test theme, acrylic and config UI.",
+        })
+
+        -- CONTROLS / FLUENT-COMPATIBLE ELEMENTS -----------------------------
+        local Basic = Tabs.Controls:AddSection("BASIC CONTROLS", "sliders-horizontal")
+        Basic:AddButton({
+            Title = "Button / callback test",
+            Description = "Prints a timestamp to the executor output.",
+            Callback = function()
+                print("[Scarlet Lab] Button clicked at", os.date("%H:%M:%S"))
+                Library:Notify({ Title = "Button test", Content = "Callback executed successfully.", Duration = 2 })
+            end,
+        })
+        local Toggle = Basic:AddToggle("ScarletLab_Toggle", {
+            Title = "Toggle state",
+            Description = "Test true / false state changes.",
+            Default = false,
+            Callback = function(value) print("[Scarlet Lab] Toggle state:", value) end,
+        })
+        Toggle:OnChanged(function(value)
+            print("[Scarlet Lab] Toggle OnChanged:", value)
+        end)
+        local Slider = Basic:AddSlider("ScarletLab_Slider", {
+            Title = "Numeric slider",
+            Description = "Range 0–100 with integer rounding.",
+            Default = 35,
+            Min = 0,
+            Max = 100,
+            Rounding = 0,
+            Callback = function(value) print("[Scarlet Lab] Slider callback:", value) end,
+        })
+        Slider:OnChanged(function(value) print("[Scarlet Lab] Slider OnChanged:", value) end)
+        Basic:AddDropdown("ScarletLab_Dropdown", {
+            Title = "Single selection",
+            Description = "Choose one item from a longer searchable list.",
+            Values = { "Scarlet", "Rose", "Crimson", "Ruby", "Arctic", "Ocean", "Forest", "Amethyst", "Midnight", "AMOLED", "Dark", "Darker" },
+            Multi = false,
+            Default = 1,
+            Callback = function(value) print("[Scarlet Lab] Dropdown:", value) end,
+        })
+        Basic:AddDropdown("ScarletLab_MultiDropdown", {
+            Title = "Multiple selection",
+            Description = "Select more than one item and inspect the returned value.",
+            Values = { "Alpha", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot", "Golf", "Hotel", "India", "Juliet" },
+            Multi = true,
+            Default = { "Alpha", "Charlie" },
+            Callback = function(value)
+                local selected = {}
+                if type(value) == "table" then
+                    for name, state in pairs(value) do
+                        if state == true then table.insert(selected, tostring(name)) end
+                    end
+                end
+                table.sort(selected)
+                print("[Scarlet Lab] Multi dropdown:", table.concat(selected, ", "))
+            end,
+        })
+        Basic:AddInput("ScarletLab_TextInput", {
+            Title = "Text input",
+            Description = "Live input callback; no external action is performed.",
+            Default = "Hello Scarlet",
+            Placeholder = "Enter some text...",
+            Numeric = false,
+            Finished = false,
+            MaxLength = 80,
+            Callback = function(value) print("[Scarlet Lab] Input:", value) end,
+        })
+        Basic:AddInput("ScarletLab_NumberInput", {
+            Title = "Numeric input",
+            Description = "Only numeric input is accepted by the component.",
+            Default = "42",
+            Placeholder = "Numbers only",
+            Numeric = true,
+            Finished = true,
+            MaxLength = 8,
+            Callback = function(value) print("[Scarlet Lab] Numeric input:", value) end,
+        })
+
+        -- INTERACTION / STATE AND INPUT --------------------------------------
+        local InputTests = Tabs.Interaction:AddSection("INPUT & STATE", "keyboard")
+        InputTests:AddParagraph({
+            Title = "Input testing",
+            Content = "Use the keybind selector to assign a key. Toggle mode switches state, Hold mode follows the key, and Always mode stays enabled. Avoid assigning the same key as your executor controls.",
+        })
+        local Keybind = InputTests:AddKeybind("ScarletLab_Keybind", {
+            Title = "Toggle keybind",
+            Description = "Default: RightAlt. Press the displayed key to toggle.",
+            Mode = "Toggle",
+            Default = "RightAlt",
+            Callback = function(value) print("[Scarlet Lab] Keybind callback:", value) end,
+            ChangedCallback = function(value) print("[Scarlet Lab] Keybind changed:", value) end,
+        })
+        Keybind:OnClick(function() print("[Scarlet Lab] Keybind OnClick state:", Keybind:GetState()) end)
+        Keybind:OnChanged(function() print("[Scarlet Lab] Keybind OnChanged:", Keybind.Value) end)
+        InputTests:AddKeybind("ScarletLab_HoldKeybind", {
+            Title = "Hold keybind",
+            Description = "Tests the Hold mode state.",
+            Mode = "Hold",
+            Default = "LeftAlt",
+            Callback = function(value) print("[Scarlet Lab] Hold keybind:", value) end,
+            ChangedCallback = function(value) print("[Scarlet Lab] Hold key changed:", value) end,
+        })
+        InputTests:AddButton({
+            Title = "Read current option values",
+            Description = "Prints a snapshot of selected demo options.",
+            Callback = function()
+                print("[Scarlet Lab] Current values", {
+                    Toggle = Options.ScarletLab_Toggle and Options.ScarletLab_Toggle.Value,
+                    Slider = Options.ScarletLab_Slider and Options.ScarletLab_Slider.Value,
+                    Dropdown = Options.ScarletLab_Dropdown and Options.ScarletLab_Dropdown.Value,
+                    Input = Options.ScarletLab_TextInput and Options.ScarletLab_TextInput.Value,
+                })
             end,
         })
 
-        local Controls = ComponentsTab:AddSection("CONTROL GALLERY", "sliders-horizontal")
-        Controls:AddSlider("ScarletDemoScale", {
-            Title = "Demo intensity",
-            Description = "Example slider control.",
-            Default = 5,
-            Min = 1,
-            Max = 10,
-            Rounding = 0,
-            Callback = function(value)
-                ScarletEnvironment.ScarletDemoIntensity = value
-            end,
+        -- APPEARANCE / COLOR -----------------------------------------------
+        local Colors = Tabs.Appearance:AddSection("COLOR CONTROLS", "palette")
+        local AccentPicker = Colors:AddColorpicker("ScarletLab_Color", {
+            Title = "Accent color",
+            Description = "Change the preview color and inspect the Color3 value.",
+            Default = Color3.fromRGB(235, 54, 84),
+            Callback = function(color) print("[Scarlet Lab] Color:", color) end,
         })
-        Controls:AddDropdown("ScarletDemoTheme", {
-            Title = "Accent theme",
-            Values = { "Scarlet", "Dark", "Darker", "AMOLED", "Rose", "Arctic" },
+        AccentPicker:OnChanged(function() print("[Scarlet Lab] Colorpicker OnChanged:", AccentPicker.Value) end)
+        Colors:AddColorpicker("ScarletLab_TransparencyColor", {
+            Title = "Color with transparency",
+            Description = "Exercises the colorpicker transparency channel.",
+            Default = Color3.fromRGB(110, 90, 255),
+            Transparency = 0.25,
+            Callback = function(color) print("[Scarlet Lab] Transparent color:", color) end,
+        })
+        Colors:AddDropdown("ScarletLab_Theme", {
+            Title = "Built-in theme selector",
+            Description = "Tests theme switching using available library themes.",
+            Values = { "Scarlet", "Dark", "Darker", "AMOLED", "Rose", "Arctic", "Aqua", "Amethyst", "Midnight", "Forest", "Sunset", "Ocean", "Emerald", "Sapphire", "Cloud", "Grape", "Bloody" },
             Default = "Scarlet",
             Callback = function(value)
-                pcall(function() Library:SetTheme(value) end)
+                local success, themeError = pcall(function() Library:SetTheme(value) end)
+                print("[Scarlet Lab] Theme:", value, "success:", success, themeError or "")
             end,
         })
-        Controls:AddInput("ScarletDemoInput", {
-            Title = "Text input",
-            Default = "Hello Scarlet",
-            Placeholder = "Type something...",
-            Callback = function(value)
-                ScarletEnvironment.ScarletDemoInput = value
+        Colors:AddSlider("ScarletLab_TransparencyPreview", {
+            Title = "Transparency value preview",
+            Description = "A standalone numeric test; does not change window transparency.",
+            Default = 25,
+            Min = 0,
+            Max = 100,
+            Rounding = 0,
+            Callback = function(value) ScarletEnvironment.ScarletLabTransparency = value / 100 end,
+        })
+
+        -- SUBTAB NAVIGATION ---------------------------------------------------
+        local SubtabOverview = Tabs.Subtabs:AddSubTab("Overview", "layout-grid")
+        local SubtabSecond = Tabs.Subtabs:AddSubTab("Nested Controls", "layers")
+        local SubtabThird = Tabs.Subtabs:AddSubTab("Long Content", "list")
+        local SubtabIntro = SubtabOverview:AddSection("SUBTAB NAVIGATION", "panel-top")
+        SubtabIntro:AddParagraph({
+            Title = "Nested navigation test",
+            Content = "This page uses the library's native AddSubTab API. Switch between the three subtabs to test selection, clipping, content visibility and transition animations.",
+        })
+        SubtabIntro:AddButton({
+            Title = "Select nested controls",
+            Description = "Navigates to the second subtab using the tab API.",
+            Callback = function()
+                pcall(function() Tabs.Subtabs:SelectSubTab(2) end)
             end,
         })
-        local Settings = SettingsTab:AddSection("INTERFACE", "settings")
+        local SubtabControls = SubtabSecond:AddSection("SUBTAB COMPONENTS", "layers")
+        SubtabControls:AddToggle("ScarletLab_SubtabToggle", {
+            Title = "Nested toggle",
+            Description = "Confirms controls work inside a subtab container.",
+            Default = true,
+            Callback = function(value) print("[Scarlet Lab] Subtab toggle:", value) end,
+        })
+        SubtabControls:AddDropdown("ScarletLab_SubtabDropdown", {
+            Title = "Nested dropdown",
+            Values = { "First", "Second", "Third", "Fourth" },
+            Default = "Second",
+            Callback = function(value) print("[Scarlet Lab] Subtab dropdown:", value) end,
+        })
+        local LongContent = SubtabThird:AddSection("SCROLL & LAYOUT", "list")
+        for index = 1, 8 do
+            LongContent:AddParagraph({
+                Title = "Layout row " .. tostring(index),
+                Content = "Repeated sample content " .. tostring(index) .. " tests scrolling, section spacing, paragraph height and clipping at different window sizes.",
+            })
+        end
+
+        -- SETTINGS / MANAGERS -----------------------------------------------
+        local Settings = Tabs.Settings:AddSection("INTERFACE & CONFIG", "settings")
         Settings:AddParagraph({
-            Title = "Library mode",
-            Content = "Set getgenv().SCARLET_ISLAND_DEMO = false before loading to skip this showcase and create your own window through ScarletIsland:CreateWindow(...)."
+            Title = "Test environment",
+            Content = "This page exposes the built-in interface and configuration manager sections. Some save features depend on executor file APIs (makefolder, writefile, readfile, listfiles).",
         })
         Settings:AddButton({
-            Title = "Unload interface",
-            Description = "Runs the library's built-in unload method.",
+            Title = "Test persistent notification",
+            Description = "Creates a notification that remains until dismissed if supported.",
             Callback = function()
+                Library:Notify({ Title = "Persistent notification", Content = "This notification uses Duration = nil.", SubContent = "Dismiss it manually if a close control is shown.", Duration = nil })
+            end,
+        })
+        local managerOK, managerError = pcall(function()
+            InterfaceManager:SetLibrary(Library)
+            SaveManager:SetLibrary(Library)
+            SaveManager:IgnoreThemeSettings()
+            SaveManager:SetIgnoreIndexes({ "ScarletLab_TransparencyPreview" })
+            InterfaceManager:SetFolder("ScarletIsland")
+            SaveManager:SetFolder("ScarletIsland/ComponentLab")
+            InterfaceManager:BuildInterfaceSection(Tabs.Settings)
+            SaveManager:BuildConfigSection(Tabs.Settings)
+        end)
+        if not managerOK then
+            warn("[ScarletIsland] Manager section test could not be built: " .. tostring(managerError))
+            Settings:AddParagraph({ Title = "Manager warning", Content = "The config/interface manager sections could not be built in this environment. Check the executor file APIs and output log." })
+        end
+        Settings:AddButton({
+            Title = "Unload library",
+            Description = "Calls the built-in unload routine. Use only when finished testing.",
+            Callback = function()
+                pcall(function() Library:Unload() end)
                 pcall(function() Library:Destroy() end)
             end,
         })
+
+        Window:SelectTab(1)
+        Library:Notify({ Title = "Scarlet Island", Content = "Component Laboratory loaded.", SubContent = "Try every tab to test controls.", Duration = 6 })
         Library:CreateIslandPill()
+
+        -- Periodic state probe is intentionally lightweight and stops on unload.
+        task.spawn(function()
+            while not Library.Unloaded do
+                task.wait(1)
+                if Library.Unloaded then break end
+                local current = Options.ScarletLab_Keybind
+                if current and current.GetState then
+                    local stateOK, state = pcall(function() return current:GetState() end)
+                    if stateOK and state then
+                        -- Keep output quiet while held; this line can be uncommented for diagnostics.
+                        ScarletEnvironment.ScarletLabKeyHeld = true
+                    else
+                        ScarletEnvironment.ScarletLabKeyHeld = false
+                    end
+                end
+            end
+        end)
     end)
+
     if not ok then
         warn("[ScarletIsland] Showcase initialization failed: " .. tostring(err))
     end
