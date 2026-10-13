@@ -24,6 +24,10 @@ local ProtectGui = protectgui or (syn and syn.protect_gui) or function() end
 
 local Themes = {
 	Names = {
+		"Dynamic",
+		"Scarlet",
+		"Aurora",
+		"WinUI",
 		"Dark",
 		"Darker", 
 		"AMOLED",
@@ -42,7 +46,6 @@ local Themes = {
 		"Cloud",
 		"Grape",
 		"Bloody",
-		"Scarlet",
 		"Arctic"
 	},
 	Dark = {
@@ -748,50 +751,75 @@ local Themes = {
 		SubText = Color3.fromRGB(180, 200, 220),
 		Hover = Color3.fromRGB(90, 140, 180),
 		HoverChange = 0.04
-	},
-	Scarlet = {
-		Name = "Scarlet",
-		Accent = Color3.fromRGB(224, 47, 77),
-		AcrylicMain = Color3.fromRGB(18, 17, 22),
-		AcrylicBorder = Color3.fromRGB(83, 38, 50),
-		AcrylicGradient = ColorSequence.new(Color3.fromRGB(24, 20, 27), Color3.fromRGB(15, 16, 21)),
-		AcrylicNoise = 0.94,
-		TitleBarLine = Color3.fromRGB(108, 38, 54),
-		Tab = Color3.fromRGB(180, 47, 70),
-		Element = Color3.fromRGB(128, 35, 54),
-		ElementBorder = Color3.fromRGB(82, 30, 43),
-		InElementBorder = Color3.fromRGB(115, 38, 57),
-		ElementTransparency = 0.82,
-		ToggleSlider = Color3.fromRGB(238, 62, 91),
-		ToggleToggled = Color3.fromRGB(38, 18, 25),
-		SliderRail = Color3.fromRGB(203, 48, 76),
-		DropdownFrame = Color3.fromRGB(155, 39, 61),
-		DropdownHolder = Color3.fromRGB(28, 20, 27),
-		DropdownBorder = Color3.fromRGB(91, 35, 51),
-		DropdownOption = Color3.fromRGB(139, 37, 58),
-		Keybind = Color3.fromRGB(190, 45, 72),
-		Input = Color3.fromRGB(107, 35, 52),
-		InputFocused = Color3.fromRGB(25, 17, 23),
-		InputIndicator = Color3.fromRGB(232, 56, 86),
-		InputIndicatorFocus = Color3.fromRGB(255, 87, 113),
-		Dialog = Color3.fromRGB(31, 21, 28),
-		DialogHolder = Color3.fromRGB(23, 18, 24),
-		DialogHolderLine = Color3.fromRGB(76, 32, 46),
-		DialogButton = Color3.fromRGB(102, 31, 49),
-		DialogButtonBorder = Color3.fromRGB(125, 39, 59),
-		DialogBorder = Color3.fromRGB(91, 35, 51),
-		DialogInput = Color3.fromRGB(38, 24, 32),
-		DialogInputLine = Color3.fromRGB(170, 44, 68),
-		Text = Color3.fromRGB(247, 243, 246),
-		SubText = Color3.fromRGB(171, 157, 168),
-		Hover = Color3.fromRGB(98, 35, 52),
-		HoverChange = 0.045
-	},
+	}
 
 }
 
+-- Scarlet Island presets. These tables preserve every property expected by the
+-- Fluent-compatible renderer while supplying a cohesive Dynamic/WinUI palette.
+local function CloneTheme(baseName, name, palette)
+    local base = table.clone(Themes[baseName] or Themes.Dark)
+    base.Name = name
+    for key, value in pairs(palette) do base[key] = value end
+    return base
+end
+
+Themes.Dynamic = CloneTheme("Dark", "Dynamic", {
+    Accent=Color3.fromRGB(151, 129, 255), AcrylicMain=Color3.fromRGB(15, 17, 27),
+    AcrylicBorder=Color3.fromRGB(68, 65, 103), AcrylicGradient=ColorSequence.new(Color3.fromRGB(18, 20, 34), Color3.fromRGB(27, 25, 45)),
+    AcrylicNoise=0.96, TitleBarLine=Color3.fromRGB(56, 54, 82), Tab=Color3.fromRGB(93, 86, 139),
+    Element=Color3.fromRGB(47, 46, 68), ElementBorder=Color3.fromRGB(65, 62, 96), InElementBorder=Color3.fromRGB(83, 77, 119),
+    ElementTransparency=0.12, ToggleSlider=Color3.fromRGB(105, 95, 155), ToggleToggled=Color3.fromRGB(23, 23, 38),
+    SliderRail=Color3.fromRGB(106, 96, 164), DropdownFrame=Color3.fromRGB(58, 54, 86), DropdownHolder=Color3.fromRGB(19, 20, 33),
+    DropdownBorder=Color3.fromRGB(69, 64, 103), DropdownOption=Color3.fromRGB(69, 63, 105), Keybind=Color3.fromRGB(55, 51, 83),
+    Input=Color3.fromRGB(36, 35, 55), InputFocused=Color3.fromRGB(24, 23, 39), InputIndicator=Color3.fromRGB(119, 103, 205),
+    InputIndicatorFocus=Color3.fromRGB(173, 153, 255), Dialog=Color3.fromRGB(18, 19, 32), DialogHolder=Color3.fromRGB(25, 25, 42),
+    DialogHolderLine=Color3.fromRGB(65, 60, 97), DialogButton=Color3.fromRGB(57, 49, 94), DialogButtonBorder=Color3.fromRGB(87, 76, 135),
+    DialogBorder=Color3.fromRGB(61, 57, 91), DialogInput=Color3.fromRGB(23, 23, 39), DialogInputLine=Color3.fromRGB(90, 80, 141),
+    Text=Color3.fromRGB(246, 245, 255), SubText=Color3.fromRGB(164, 163, 190), Hover=Color3.fromRGB(76, 68, 117), HoverChange=0.04
+})
+Themes.Scarlet = CloneTheme("Dynamic", "Scarlet", {
+    Accent=Color3.fromRGB(255, 73, 105), AcrylicMain=Color3.fromRGB(23, 14, 22),
+    AcrylicBorder=Color3.fromRGB(100, 43, 62), AcrylicGradient=ColorSequence.new(Color3.fromRGB(28, 14, 25), Color3.fromRGB(43, 17, 33)),
+    TitleBarLine=Color3.fromRGB(105, 38, 57), Tab=Color3.fromRGB(151, 51, 78), Element=Color3.fromRGB(61, 31, 46),
+    ElementBorder=Color3.fromRGB(105, 47, 68), InElementBorder=Color3.fromRGB(132, 53, 79), ToggleSlider=Color3.fromRGB(180, 61, 91),
+    SliderRail=Color3.fromRGB(191, 67, 99), DropdownFrame=Color3.fromRGB(78, 35, 54), DropdownHolder=Color3.fromRGB(29, 17, 27),
+    DropdownBorder=Color3.fromRGB(103, 42, 64), DropdownOption=Color3.fromRGB(83, 36, 56), Keybind=Color3.fromRGB(72, 31, 49),
+    Input=Color3.fromRGB(47, 25, 38), InputFocused=Color3.fromRGB(29, 17, 27), InputIndicator=Color3.fromRGB(205, 54, 91),
+    InputIndicatorFocus=Color3.fromRGB(255, 92, 127), Dialog=Color3.fromRGB(25, 15, 24), DialogHolder=Color3.fromRGB(36, 19, 30),
+    DialogHolderLine=Color3.fromRGB(99, 39, 61), DialogButton=Color3.fromRGB(93, 34, 57), DialogButtonBorder=Color3.fromRGB(130, 43, 71),
+    DialogBorder=Color3.fromRGB(93, 37, 59), DialogInput=Color3.fromRGB(31, 17, 27), DialogInputLine=Color3.fromRGB(151, 45, 75),
+    Text=Color3.fromRGB(255, 244, 248), SubText=Color3.fromRGB(190, 151, 165), Hover=Color3.fromRGB(93, 38, 61)
+})
+Themes.Aurora = CloneTheme("Dynamic", "Aurora", {
+    Accent=Color3.fromRGB(88, 231, 201), AcrylicMain=Color3.fromRGB(10, 23, 27),
+    AcrylicBorder=Color3.fromRGB(35, 93, 92), AcrylicGradient=ColorSequence.new(Color3.fromRGB(10, 26, 31), Color3.fromRGB(15, 39, 43)),
+    TitleBarLine=Color3.fromRGB(33, 90, 85), Tab=Color3.fromRGB(47, 127, 114), Element=Color3.fromRGB(25, 57, 59),
+    ElementBorder=Color3.fromRGB(39, 90, 89), InElementBorder=Color3.fromRGB(52, 117, 110), ToggleSlider=Color3.fromRGB(57, 157, 139),
+    SliderRail=Color3.fromRGB(60, 167, 148), DropdownFrame=Color3.fromRGB(32, 76, 77), DropdownHolder=Color3.fromRGB(12, 29, 33),
+    DropdownBorder=Color3.fromRGB(37, 93, 91), DropdownOption=Color3.fromRGB(35, 88, 85), Keybind=Color3.fromRGB(27, 68, 68),
+    Input=Color3.fromRGB(18, 44, 48), InputFocused=Color3.fromRGB(12, 29, 33), InputIndicator=Color3.fromRGB(55, 170, 148),
+    InputIndicatorFocus=Color3.fromRGB(88, 231, 201), Dialog=Color3.fromRGB(10, 26, 30), DialogHolder=Color3.fromRGB(15, 37, 41),
+    DialogHolderLine=Color3.fromRGB(35, 91, 88), DialogButton=Color3.fromRGB(25, 80, 75), DialogButtonBorder=Color3.fromRGB(42, 119, 105),
+    DialogBorder=Color3.fromRGB(31, 83, 82), DialogInput=Color3.fromRGB(13, 32, 36), DialogInputLine=Color3.fromRGB(52, 139, 125),
+    Text=Color3.fromRGB(239, 255, 251), SubText=Color3.fromRGB(151, 193, 187), Hover=Color3.fromRGB(33, 86, 82)
+})
+Themes.WinUI = CloneTheme("Dark", "WinUI", {
+    Accent=Color3.fromRGB(0, 120, 212), AcrylicMain=Color3.fromRGB(28, 28, 28),
+    AcrylicBorder=Color3.fromRGB(66, 66, 66), AcrylicGradient=ColorSequence.new(Color3.fromRGB(31, 31, 31), Color3.fromRGB(25, 25, 25)),
+    TitleBarLine=Color3.fromRGB(54, 54, 54), Tab=Color3.fromRGB(68, 68, 68), Element=Color3.fromRGB(45, 45, 45),
+    ElementBorder=Color3.fromRGB(72, 72, 72), InElementBorder=Color3.fromRGB(84, 84, 84), ToggleSlider=Color3.fromRGB(70, 70, 70),
+    SliderRail=Color3.fromRGB(0, 120, 212), DropdownFrame=Color3.fromRGB(54, 54, 54), DropdownHolder=Color3.fromRGB(31, 31, 31),
+    DropdownBorder=Color3.fromRGB(68, 68, 68), DropdownOption=Color3.fromRGB(58, 58, 58), Keybind=Color3.fromRGB(49, 49, 49),
+    Input=Color3.fromRGB(38, 38, 38), InputFocused=Color3.fromRGB(27, 27, 27), InputIndicator=Color3.fromRGB(0, 120, 212),
+    InputIndicatorFocus=Color3.fromRGB(38, 151, 236), Dialog=Color3.fromRGB(29, 29, 29), DialogHolder=Color3.fromRGB(37, 37, 37),
+    DialogHolderLine=Color3.fromRGB(65, 65, 65), DialogButton=Color3.fromRGB(42, 42, 42), DialogButtonBorder=Color3.fromRGB(72, 72, 72),
+    DialogBorder=Color3.fromRGB(62, 62, 62), DialogInput=Color3.fromRGB(33, 33, 33), DialogInputLine=Color3.fromRGB(0, 120, 212),
+    Text=Color3.fromRGB(245, 245, 245), SubText=Color3.fromRGB(170, 170, 170), Hover=Color3.fromRGB(61, 61, 61), HoverChange=0.03
+})
+
 local Library = {
-	Version = "1.3.0-scarlet",
+    Version = "2.0.0-dynamic",
 
 	OpenFrames = {},
 	Options = {},
@@ -1335,7 +1363,7 @@ function Creator.Disconnect()
 end
 
 Creator.Themes = Themes
-Creator.Theme = Creator.Theme or "Dark"
+Creator.Theme = Creator.Theme or "Dynamic"
 
 function Creator.GetThemeProperty(Property)
 	local Theme = Creator.Themes[Creator.Theme]
@@ -1347,7 +1375,7 @@ end
 
 function Creator.UpdateTheme()
 	if not Creator.Themes[Creator.Theme] then
-		Creator.Theme = "Dark"
+		Creator.Theme = "Dynamic"
 	end
 
 	for Instance, Object in next, Creator.Registry do
@@ -5004,7 +5032,7 @@ Components.Window = (function()
 				if Input.KeyCode.Name == Library.MinimizeKeybind.Value then
 					Window:Minimize()
 				end
-			elseif Library.MinimizeKey ~= Enum.KeyCode.Unknown and Input.KeyCode == Library.MinimizeKey and not UserInputService:GetFocusedTextBox() then
+			elseif Input.KeyCode == Library.MinimizeKey and not UserInputService:GetFocusedTextBox() then
 				Window:Minimize()
 			end
 		end)
@@ -5026,8 +5054,40 @@ Components.Window = (function()
 		end
 
 		function Window:Minimize()
-			Window.Minimized = not Window.Minimized
-			Window.Root.Visible = not Window.Minimized
+            Window.Minimized = not Window.Minimized
+            local root = Window.Root
+            if root then
+                local motionScale = root:FindFirstChild("ScarletIslandMotionScale")
+                if not motionScale then
+                    motionScale = Instance.new("UIScale")
+                    motionScale.Name = "ScarletIslandMotionScale"
+                    motionScale.Scale = 1
+                    motionScale.Parent = root
+                end
+                if Window.Minimized then
+                    local origin = root.Position
+                    local away = UDim2.new(origin.X.Scale, origin.X.Offset, origin.Y.Scale, origin.Y.Offset + 12)
+                    root.Visible = true
+                    TweenService:Create(root, TweenInfo.new(0.19, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {Position=away}):Play()
+                    TweenService:Create(motionScale, TweenInfo.new(0.19, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {Scale=0.965}):Play()
+                    task.delay(0.2, function()
+                        if root.Parent and Window.Minimized then
+                            root.Visible = false
+                            root.Position = origin
+                            motionScale.Scale = 1
+                        end
+                    end)
+                    Library:SetIslandStatus("SCARLET ISLAND", "INTERFACE  /  HIDDEN", false)
+                else
+                    root.Visible = true
+                    local target = root.Position
+                    root.Position = UDim2.new(target.X.Scale, target.X.Offset, target.Y.Scale, target.Y.Offset + 12)
+                    motionScale.Scale = 0.965
+                    TweenService:Create(root, TweenInfo.new(0.28, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Position=target}):Play()
+                    TweenService:Create(motionScale, TweenInfo.new(0.28, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Scale=1}):Play()
+                    Library:SetIslandStatus("SCARLET ISLAND", "INTERFACE  /  ACTIVE", true)
+                end
+            end
 
 			for _, Option in next, Library.Options do
 				if Option and Option.Type == "Dropdown" and Option.Opened then
@@ -5060,7 +5120,7 @@ Components.Window = (function()
 						if mobileButton then
 							local imageLabel = mobileButton:FindFirstChild("ImageLabel")
 							if imageLabel then
-								imageLabel.Image = Window.Minimized and "rbxassetid://10734896384" or "rbxassetid://10734897102"
+								imageLabel.Image = "rbxassetid://116983769705"
 							end
 						end
 					else
@@ -5068,7 +5128,7 @@ Components.Window = (function()
 						if desktopButton then
 							local imageLabel = desktopButton:FindFirstChild("ImageLabel")
 							if imageLabel then
-								imageLabel.Image = Window.Minimized and "rbxassetid://10734896384" or "rbxassetid://10734897102"
+								imageLabel.Image = "rbxassetid://116983769705"
 							end
 						end
 					end
@@ -9637,7 +9697,7 @@ Library.CreateWindow = function(self, Config)
 	Library.Acrylic = Config.Acrylic or false
 
 
-	Library.Theme = Config.Theme or "Scarlet"
+	Library.Theme = Config.Theme or "Dynamic"
 
 	if Config.BackgroundImage == nil then
 		Config.BackgroundImage = "rbxassetid://13196113628"
@@ -9759,20 +9819,19 @@ Library.CreateWindow = function(self, Config)
 
 
 	table.insert(Library.Windows, Window)
-
-
-	InterfaceManager:SetTheme(Library.Theme)
-
-
-	Library:SetTheme(Library.Theme)
-
-	task.defer(function()
-		if Library.CreateIslandPill then
-			pcall(function() Library:CreateIslandPill() end)
-		end
-	end)
-
-	return Window
+    InterfaceManager:SetTheme(Library.Theme)
+    Library:SetTheme(Library.Theme)
+    if Config.DynamicIsland ~= false then
+        Library:CreateMinimizer({
+            Icon = Config.IslandIcon or Config.Icon or "rbxassetid://116983769705",
+            Size = Config.IslandSize,
+            Position = Config.IslandPosition,
+            Draggable = Config.IslandDraggable == true,
+            Acrylic = false,
+            Visible = true,
+        })
+    end
+    return Window
 
 
 end
@@ -9811,7 +9870,7 @@ function Library:CreateMinimizer(Config)
 
 
 
-	local iconAsset = "rbxassetid://10734897102"
+	local iconAsset = Config.Icon or "rbxassetid://116983769705"
 
 
 	if type(Config.Icon) == "string" and Config.Icon ~= "" then
@@ -9982,67 +10041,19 @@ function Library:CreateMinimizer(Config)
 
 
 
-	if isMobile then
-
-
-		holder = New("Frame", {
-
-
-			Name = "FluentMinimizer",
-
-
-			Parent = parentGui,
-
-
-			Size = Config.Size or UDim2.fromOffset(36, 36),
-
-
-			Position = Config.Position or UDim2.new(0.45, 0, 0.025, 0),
-
-
-			BackgroundTransparency = 1,
-
-
-			ZIndex = 999999999,
-
-
-			Visible = (Config.Visible ~= false),
-
-
-		})
-
-
-	else
-
-
-		holder = New("Frame", {
-
-
-			Name = "FluentMinimizer",
-
-
-			Parent = parentGui,
-
-
-			Size = Config.Size or UDim2.fromOffset(36, 36),
-
-
-			Position = Config.Position or UDim2.new(0, 300, 0, 20),
-
-
-			BackgroundTransparency = 1,
-
-
-			ZIndex = 999999999,
-
-
-			Visible = (Config.Visible ~= false),
-
-
-		})
-
-
-	end
+	local islandSize = Config.Size or UDim2.fromOffset(isMobile and 206 or 214, isMobile and 50 or 52)
+    local islandPosition = Config.Position or UDim2.new(0.5, 0, 0, isMobile and 10 or 12)
+    holder = New("Frame", {
+        Name = "ScarletDynamicIsland",
+        Parent = parentGui,
+        AnchorPoint = (not draggableWhole) and Vector2.new(0.5, 0) or Vector2.new(0, 0),
+        Size = islandSize,
+        Position = Config.Position or islandPosition,
+        BackgroundTransparency = 1,
+        ZIndex = 999999999,
+        Visible = (Config.Visible ~= false),
+        ClipsDescendants = false,
+    })
 
 
 
@@ -10112,16 +10123,85 @@ function Library:CreateMinimizer(Config)
 
 
 	local btnInstance = createButton(not isMobile)
-
-
-	btnInstance.Parent = holder
-
-
-	btnInstance.ZIndex = (holder.ZIndex or 0) + 1
-
-
-
-
+    btnInstance.Parent = holder
+    btnInstance.ZIndex = (holder.ZIndex or 0) + 1
+    btnInstance.BackgroundColor3 = Color3.fromRGB(16, 17, 25)
+    btnInstance.BackgroundTransparency = 0.03
+    btnInstance.AutoButtonColor = false
+    pcall(function() Creator.OverrideTag(btnInstance, {BackgroundColor3="AcrylicMain"}) end)
+    pcall(function()
+        local outline = btnInstance:FindFirstChildOfClass("UIStroke")
+        if outline then Creator.OverrideTag(outline, {Color="AcrylicBorder"}) end
+    end)
+    pcall(function()
+        local corner = btnInstance:FindFirstChildOfClass("UICorner")
+        if corner then corner.CornerRadius = UDim.new(1, 0) end
+        local stroke = btnInstance:FindFirstChildOfClass("UIStroke")
+        if stroke then stroke.Thickness = 1.2; stroke.Transparency = 0.28 end
+        local icon = btnInstance:FindFirstChild("Icon", true)
+        if icon and icon:IsA("ImageLabel") then
+            icon.Size = UDim2.fromOffset(31, 31)
+            icon.Position = UDim2.new(0, 10, 0.5, 0)
+            icon.AnchorPoint = Vector2.new(0, 0.5)
+            icon.ImageColor3 = Color3.fromRGB(255, 255, 255)
+            icon.ZIndex = btnInstance.ZIndex + 2
+        end
+    end)
+    local islandTitle = New("TextLabel", {
+        Name="IslandTitle", Parent=holder, BackgroundTransparency=1, BorderSizePixel=0,
+        Position=UDim2.new(0, 51, 0, 9), Size=UDim2.new(1, -84, 0, 17),
+        Font=Enum.Font.GothamSemibold, Text="SCARLET ISLAND", TextSize=11,
+        TextXAlignment=Enum.TextXAlignment.Left, TextYAlignment=Enum.TextYAlignment.Center,
+        TextColor3=Color3.fromRGB(247, 246, 255), Active=false, ZIndex=btnInstance.ZIndex+3,
+        ThemeTag={TextColor3="Text"},
+    })
+    local islandSubtitle = New("TextLabel", {
+        Name="IslandSubtitle", Parent=holder, BackgroundTransparency=1, BorderSizePixel=0,
+        Position=UDim2.new(0, 51, 0, 26), Size=UDim2.new(1, -82, 0, 13),
+        Font=Enum.Font.Gotham, Text="DYNAMIC INTERFACE  /  READY", TextSize=8,
+        TextXAlignment=Enum.TextXAlignment.Left, TextYAlignment=Enum.TextYAlignment.Center,
+        TextColor3=Color3.fromRGB(160, 161, 185), Active=false, ZIndex=btnInstance.ZIndex+3,
+        ThemeTag={TextColor3="SubText"},
+    })
+    local islandDot = New("Frame", {
+        Name="IslandStatusDot", Parent=holder, AnchorPoint=Vector2.new(1,0.5),
+        Position=UDim2.new(1,-13,0.5,0), Size=UDim2.fromOffset(7,7), BorderSizePixel=0,
+        BackgroundColor3=Color3.fromRGB(93, 235, 180), Active=false, ZIndex=btnInstance.ZIndex+4,
+        ThemeTag={BackgroundColor3="Accent"},
+    }, {New("UICorner", {CornerRadius=UDim.new(1,0)})})
+    local islandDotStroke = New("UIStroke", {Parent=islandDot, Color=Color3.fromRGB(93,235,180), Thickness=3, Transparency=0.75})
+    local islandPulse = TweenService:Create(islandDotStroke, TweenInfo.new(1.1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {Transparency=0.94})
+    islandPulse:Play()
+    Library.IslandPulse = islandPulse
+    Library.IslandTitle = islandTitle
+    Library.IslandSubtitle = islandSubtitle
+    Library.IslandStatusDot = islandDot
+    Library.IslandExpandedSize = UDim2.fromOffset(isMobile and 228 or 242, isMobile and 54 or 56)
+    Library.IslandCompactSize = islandSize
+    local islandHover = false
+    local function animateIsland(expanded)
+        if not holder or not holder.Parent then return end
+        local targetSize = expanded and Library.IslandExpandedSize or Library.IslandCompactSize
+        TweenService:Create(holder, TweenInfo.new(0.24, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Size=targetSize}):Play()
+        TweenService:Create(btnInstance, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            BackgroundTransparency = expanded and 0 or 0.04
+        }):Play()
+        TweenService:Create(islandDot, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            Size=expanded and UDim2.fromOffset(8,8) or UDim2.fromOffset(7,7)
+        }):Play()
+    end
+    Creator.AddSignal(btnInstance.MouseEnter, function()
+        islandHover = true
+        animateIsland(true)
+    end)
+    Creator.AddSignal(btnInstance.MouseLeave, function()
+        islandHover = false
+        animateIsland(false)
+    end)
+    Creator.AddSignal(btnInstance.Activated, function()
+        animateIsland(true)
+        task.delay(0.35, function() if not islandHover then animateIsland(false) end end)
+    end)
 
 	local button = holder:FindFirstChildOfClass("TextButton")
 
@@ -10291,38 +10371,31 @@ end
 
 
 
-function Library:SetTheme(Value)
-
-
-	if Library.Window and table.find(Library.Themes, Value) then
-
-
-		Library.Theme = Value
-
-
-		Creator.UpdateTheme()
-
-
-
-
-
-		if Value == "Glass" then
-
-
-			Library:SetWindowTransparency(0.9)
-
-
-		end
-
-
-	end
-
-
+function Library:GetThemeNames()
+    return table.clone(Library.Themes)
 end
 
+function Library:SetIslandStatus(title, subtitle, active)
+    if Library.IslandTitle then Library.IslandTitle.Text = tostring(title or "SCARLET ISLAND") end
+    if Library.IslandSubtitle then Library.IslandSubtitle.Text = tostring(subtitle or "DYNAMIC INTERFACE  /  READY") end
+    if Library.IslandStatusDot then
+        Library.IslandStatusDot.BackgroundColor3 = active == false and Color3.fromRGB(255, 183, 77) or Creator.GetThemeProperty("Accent") or Color3.fromRGB(93, 235, 180)
+        local stroke = Library.IslandStatusDot:FindFirstChildOfClass("UIStroke")
+        if stroke then stroke.Color = Library.IslandStatusDot.BackgroundColor3 end
+    end
+end
 
-
-
+function Library:SetTheme(Value)
+    if type(Value) ~= "string" or not table.find(Library.Themes, Value) or not Themes[Value] then
+        warn("[ScarletIsland] Unknown theme: " .. tostring(Value))
+        return false
+    end
+    Library.Theme = Value
+    Creator.Theme = Value
+    Creator.UpdateTheme()
+    if Value == "Glass" then Library:SetWindowTransparency(0.9) end
+    return true
+end
 
 function Library:Destroy()
 
@@ -11117,411 +11190,14 @@ end)
 
     
 
--- ============================================================================
--- SCARLET ISLAND: executor smoke-test + public global
--- Set getgenv().SCARLET_ISLAND_DEMO = false before loading to disable the demo
--- and use this as a library. The full Fluent component/API implementation above
--- remains intact; this section is only a first-run showcase and island launcher.
--- ============================================================================
-local ScarletEnvironment = (getgenv and getgenv()) or _G
-ScarletEnvironment.ScarletIsland = Library
-ScarletEnvironment.ScarletLibrary = Library
-
-function Library:CreateIslandPill()
-    if self.IslandPill and self.IslandPill.Parent then
-        return self.IslandPill
-    end
-    local pill = Instance.new("TextButton")
-    pill.Name = "ScarletDynamicIsland"
-    pill.AnchorPoint = Vector2.new(0.5, 0)
-    pill.Position = UDim2.new(0.5, 0, 0, 12)
-    pill.Size = UDim2.fromOffset(184, 38)
-    pill.BackgroundColor3 = Color3.fromRGB(18, 17, 22)
-    pill.BackgroundTransparency = 0.04
-    pill.BorderSizePixel = 0
-    pill.AutoButtonColor = false
-    pill.Text = ""
-    pill.ZIndex = 100
-    pill.Parent = GUI
-    pill.MouseEnter:Connect(function()
-        TweenService:Create(pill, TweenInfo.new(0.18, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-            Size = UDim2.fromOffset(198, 40)
-        }):Play()
-    end)
-    pill.MouseLeave:Connect(function()
-        TweenService:Create(pill, TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-            Size = UDim2.fromOffset(184, 38)
-        }):Play()
-    end)
-    local pillCorner = Instance.new("UICorner")
-    pillCorner.CornerRadius = UDim.new(1, 0)
-    pillCorner.Parent = pill
-    local pillStroke = Instance.new("UIStroke")
-    pillStroke.Color = Color3.fromRGB(94, 42, 55)
-    pillStroke.Transparency = 0.12
-    pillStroke.Thickness = 1
-    pillStroke.Parent = pill
-    local dot = Instance.new("Frame")
-    dot.Name = "StatusDot"
-    dot.Position = UDim2.fromOffset(13, 14)
-    dot.Size = UDim2.fromOffset(9, 9)
-    dot.BackgroundColor3 = Color3.fromRGB(235, 54, 84)
-    dot.BorderSizePixel = 0
-    dot.ZIndex = 101
-    dot.Parent = pill
-    local dotCorner = Instance.new("UICorner")
-    dotCorner.CornerRadius = UDim.new(1, 0)
-    dotCorner.Parent = dot
-    local pillLabel = Instance.new("TextLabel")
-    pillLabel.Name = "Status"
-    pillLabel.BackgroundTransparency = 1
-    pillLabel.Position = UDim2.fromOffset(30, 0)
-    pillLabel.Size = UDim2.new(1, -42, 1, 0)
-    pillLabel.Font = Enum.Font.GothamSemibold
-    pillLabel.TextSize = 11
-    pillLabel.TextXAlignment = Enum.TextXAlignment.Left
-    pillLabel.TextColor3 = Color3.fromRGB(247, 243, 246)
-    pillLabel.Text = "SCARLET  /  OPEN"
-    pillLabel.ZIndex = 101
-    pillLabel.Parent = pill
-    pill.Activated:Connect(function()
-        local window = Library.Window
-        if window and type(window.Minimize) == "function" then
-            local ok = pcall(function() window:Minimize() end)
-            if ok then
-                pillLabel.Text = window.Minimized and "SCARLET  /  HIDDEN" or "SCARLET  /  OPEN"
-                dot.BackgroundColor3 = window.Minimized and Color3.fromRGB(145, 145, 155) or Color3.fromRGB(235, 54, 84)
-            end
-        end
-    end)
-    self.IslandPill = pill
-    return pill
-end
-
-local function CreateScarletShowcase()
-    if Library.Window or ScarletEnvironment.SCARLET_ISLAND_DEMO == false then
-        return
-    end
-
-    local ok, err = pcall(function()
-        local Window = Library:CreateWindow({
-            Title = "Scarlet Island  /  " .. tostring(Library.Version or "Fluent Core"),
-            SubTitle = "Component Laboratory",
-            Icon = "rbxassetid://116983769705",
-            Size = UDim2.fromOffset(720, 520),
-            Acrylic = true,
-            Theme = "Scarlet",
-            TabWidth = 155,
-            Search = true,
-            DropdownsOutsideWindow = true,
-            MinimizeKey = Enum.KeyCode.Unknown,
-            UserInfo = true,
-            UserInfoTitle = LocalPlayer.DisplayName,
-            UserInfoSubtitle = "SCARLET LAB / READY",
-            UserInfoTop = true,
-        })
-        if not Window then return end
-
-        local Tabs = {
-            Main = Window:AddTab({ Title = "Main", Icon = "house" }),
-            Controls = Window:AddTab({ Title = "Controls", Icon = "sliders-horizontal" }),
-            Interaction = Window:AddTab({ Title = "Interaction", Icon = "mouse-pointer-click" }),
-            Appearance = Window:AddTab({ Title = "Appearance", Icon = "palette" }),
-            Subtabs = Window:AddTab({ Title = "Subtabs", Icon = "layout-grid" }),
-            Settings = Window:AddTab({ Title = "Settings", Icon = "settings" }),
-        }
-        local Options = Library.Options
-
-        -- MAIN / STATUS ------------------------------------------------------
-        local Intro = Tabs.Main:AddSection("WELCOME TO THE LAB", "activity")
-        Intro:AddParagraph({
-            Title = "Scarlet Island UI",
-            Content = "This is a live component test bench built on the Fluent component system. Try each control, change tabs, use search, resize the window, and watch the output log.\nNo game actions are performed by these demo controls.",
-        })
-        Intro:AddButton({
-            Title = "Send test notification",
-            Description = "Exercises title, content, subcontent and duration.",
-            Callback = function()
-                Library:Notify({ Title = "Scarlet notification", Content = "The notification layer is responding.", SubContent = "Component Laboratory", Duration = 5 })
-            end,
-        })
-        Intro:AddButton({
-            Title = "Open confirmation dialog",
-            Description = "Tests dialog layout and both callback buttons.",
-            Callback = function()
-                Window:Dialog({
-                    Title = "Confirm interaction",
-                    Content = "This is a demo dialog. Choose an action to test the callbacks.",
-                    Buttons = {
-                        { Title = "Confirm", Callback = function() Library:Notify({ Title = "Dialog", Content = "Confirm callback fired.", Duration = 3 }) end },
-                        { Title = "Cancel", Callback = function() Library:Notify({ Title = "Dialog", Content = "Cancel callback fired.", Duration = 3 }) end },
-                    },
-                })
-            end,
-        })
-        Intro:AddToggle("ScarletLab_Animations", {
-            Title = "Demo event toggle",
-            Description = "Changes state and reports it without affecting gameplay.",
-            Default = true,
-            Callback = function(value)
-                print("[Scarlet Lab] Toggle:", value)
-            end,
-        })
-        Intro:AddParagraph({
-            Title = "Quick checklist",
-            Content = "1. Click buttons and dialog choices.\n2. Change each control on the Controls tab.\n3. Try keybind modes and color transparency.\n4. Search for a control by its title.\n5. Open Settings to test theme, acrylic and config UI.",
-        })
-
-        -- CONTROLS / FLUENT-COMPATIBLE ELEMENTS -----------------------------
-        local Basic = Tabs.Controls:AddSection("BASIC CONTROLS", "sliders-horizontal")
-        Basic:AddButton({
-            Title = "Button / callback test",
-            Description = "Prints a timestamp to the executor output.",
-            Callback = function()
-                print("[Scarlet Lab] Button clicked at", os.date("%H:%M:%S"))
-                Library:Notify({ Title = "Button test", Content = "Callback executed successfully.", Duration = 2 })
-            end,
-        })
-        local Toggle = Basic:AddToggle("ScarletLab_Toggle", {
-            Title = "Toggle state",
-            Description = "Test true / false state changes.",
-            Default = false,
-            Callback = function(value) print("[Scarlet Lab] Toggle state:", value) end,
-        })
-        Toggle:OnChanged(function(value)
-            print("[Scarlet Lab] Toggle OnChanged:", value)
-        end)
-        local Slider = Basic:AddSlider("ScarletLab_Slider", {
-            Title = "Numeric slider",
-            Description = "Range 0–100 with integer rounding.",
-            Default = 35,
-            Min = 0,
-            Max = 100,
-            Rounding = 0,
-            Callback = function(value) print("[Scarlet Lab] Slider callback:", value) end,
-        })
-        Slider:OnChanged(function(value) print("[Scarlet Lab] Slider OnChanged:", value) end)
-        Basic:AddDropdown("ScarletLab_Dropdown", {
-            Title = "Single selection",
-            Description = "Choose one item from a longer searchable list.",
-            Values = { "Scarlet", "Rose", "Crimson", "Ruby", "Arctic", "Ocean", "Forest", "Amethyst", "Midnight", "AMOLED", "Dark", "Darker" },
-            Multi = false,
-            Default = 1,
-            Callback = function(value) print("[Scarlet Lab] Dropdown:", value) end,
-        })
-        Basic:AddDropdown("ScarletLab_MultiDropdown", {
-            Title = "Multiple selection",
-            Description = "Select more than one item and inspect the returned value.",
-            Values = { "Alpha", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot", "Golf", "Hotel", "India", "Juliet" },
-            Multi = true,
-            Default = { "Alpha", "Charlie" },
-            Callback = function(value)
-                local selected = {}
-                if type(value) == "table" then
-                    for name, state in pairs(value) do
-                        if state == true then table.insert(selected, tostring(name)) end
-                    end
-                end
-                table.sort(selected)
-                print("[Scarlet Lab] Multi dropdown:", table.concat(selected, ", "))
-            end,
-        })
-        Basic:AddInput("ScarletLab_TextInput", {
-            Title = "Text input",
-            Description = "Live input callback; no external action is performed.",
-            Default = "Hello Scarlet",
-            Placeholder = "Enter some text...",
-            Numeric = false,
-            Finished = false,
-            MaxLength = 80,
-            Callback = function(value) print("[Scarlet Lab] Input:", value) end,
-        })
-        Basic:AddInput("ScarletLab_NumberInput", {
-            Title = "Numeric input",
-            Description = "Only numeric input is accepted by the component.",
-            Default = "42",
-            Placeholder = "Numbers only",
-            Numeric = true,
-            Finished = true,
-            MaxLength = 8,
-            Callback = function(value) print("[Scarlet Lab] Numeric input:", value) end,
-        })
-
-        -- INTERACTION / STATE AND INPUT --------------------------------------
-        local InputTests = Tabs.Interaction:AddSection("INPUT & STATE", "keyboard")
-        InputTests:AddParagraph({
-            Title = "Input testing",
-            Content = "Use the keybind selector to assign a key. Toggle mode switches state, Hold mode follows the key, and Always mode stays enabled. Avoid assigning the same key as your executor controls.",
-        })
-        local Keybind = InputTests:AddKeybind("ScarletLab_Keybind", {
-            Title = "Toggle keybind",
-            Description = "Default: RightAlt. Press the displayed key to toggle.",
-            Mode = "Toggle",
-            Default = "RightAlt",
-            Callback = function(value) print("[Scarlet Lab] Keybind callback:", value) end,
-            ChangedCallback = function(value) print("[Scarlet Lab] Keybind changed:", value) end,
-        })
-        Keybind:OnClick(function() print("[Scarlet Lab] Keybind OnClick state:", Keybind:GetState()) end)
-        Keybind:OnChanged(function() print("[Scarlet Lab] Keybind OnChanged:", Keybind.Value) end)
-        InputTests:AddKeybind("ScarletLab_HoldKeybind", {
-            Title = "Hold keybind",
-            Description = "Tests the Hold mode state.",
-            Mode = "Hold",
-            Default = "LeftAlt",
-            Callback = function(value) print("[Scarlet Lab] Hold keybind:", value) end,
-            ChangedCallback = function(value) print("[Scarlet Lab] Hold key changed:", value) end,
-        })
-        InputTests:AddButton({
-            Title = "Read current option values",
-            Description = "Prints a snapshot of selected demo options.",
-            Callback = function()
-                print("[Scarlet Lab] Current values", {
-                    Toggle = Options.ScarletLab_Toggle and Options.ScarletLab_Toggle.Value,
-                    Slider = Options.ScarletLab_Slider and Options.ScarletLab_Slider.Value,
-                    Dropdown = Options.ScarletLab_Dropdown and Options.ScarletLab_Dropdown.Value,
-                    Input = Options.ScarletLab_TextInput and Options.ScarletLab_TextInput.Value,
-                })
-            end,
-        })
-
-        -- APPEARANCE / COLOR -----------------------------------------------
-        local Colors = Tabs.Appearance:AddSection("COLOR CONTROLS", "palette")
-        local AccentPicker = Colors:AddColorpicker("ScarletLab_Color", {
-            Title = "Accent color",
-            Description = "Change the preview color and inspect the Color3 value.",
-            Default = Color3.fromRGB(235, 54, 84),
-            Callback = function(color) print("[Scarlet Lab] Color:", color) end,
-        })
-        AccentPicker:OnChanged(function() print("[Scarlet Lab] Colorpicker OnChanged:", AccentPicker.Value) end)
-        Colors:AddColorpicker("ScarletLab_TransparencyColor", {
-            Title = "Color with transparency",
-            Description = "Exercises the colorpicker transparency channel.",
-            Default = Color3.fromRGB(110, 90, 255),
-            Transparency = 0.25,
-            Callback = function(color) print("[Scarlet Lab] Transparent color:", color) end,
-        })
-        Colors:AddDropdown("ScarletLab_Theme", {
-            Title = "Built-in theme selector",
-            Description = "Tests theme switching using available library themes.",
-            Values = { "Scarlet", "Dark", "Darker", "AMOLED", "Rose", "Arctic", "Aqua", "Amethyst", "Midnight", "Forest", "Sunset", "Ocean", "Emerald", "Sapphire", "Cloud", "Grape", "Bloody" },
-            Default = "Scarlet",
-            Callback = function(value)
-                local success, themeError = pcall(function() Library:SetTheme(value) end)
-                print("[Scarlet Lab] Theme:", value, "success:", success, themeError or "")
-            end,
-        })
-        Colors:AddSlider("ScarletLab_TransparencyPreview", {
-            Title = "Transparency value preview",
-            Description = "A standalone numeric test; does not change window transparency.",
-            Default = 25,
-            Min = 0,
-            Max = 100,
-            Rounding = 0,
-            Callback = function(value) ScarletEnvironment.ScarletLabTransparency = value / 100 end,
-        })
-
-        -- SUBTAB NAVIGATION ---------------------------------------------------
-        local SubtabOverview = Tabs.Subtabs:AddSubTab("Overview", "layout-grid")
-        local SubtabSecond = Tabs.Subtabs:AddSubTab("Nested Controls", "layers")
-        local SubtabThird = Tabs.Subtabs:AddSubTab("Long Content", "list")
-        local SubtabIntro = SubtabOverview:AddSection("SUBTAB NAVIGATION", "panel-top")
-        SubtabIntro:AddParagraph({
-            Title = "Nested navigation test",
-            Content = "This page uses the library's native AddSubTab API. Switch between the three subtabs to test selection, clipping, content visibility and transition animations.",
-        })
-        SubtabIntro:AddButton({
-            Title = "Select nested controls",
-            Description = "Navigates to the second subtab using the tab API.",
-            Callback = function()
-                pcall(function() Tabs.Subtabs:SelectSubTab(2) end)
-            end,
-        })
-        local SubtabControls = SubtabSecond:AddSection("SUBTAB COMPONENTS", "layers")
-        SubtabControls:AddToggle("ScarletLab_SubtabToggle", {
-            Title = "Nested toggle",
-            Description = "Confirms controls work inside a subtab container.",
-            Default = true,
-            Callback = function(value) print("[Scarlet Lab] Subtab toggle:", value) end,
-        })
-        SubtabControls:AddDropdown("ScarletLab_SubtabDropdown", {
-            Title = "Nested dropdown",
-            Values = { "First", "Second", "Third", "Fourth" },
-            Default = "Second",
-            Callback = function(value) print("[Scarlet Lab] Subtab dropdown:", value) end,
-        })
-        local LongContent = SubtabThird:AddSection("SCROLL & LAYOUT", "list")
-        for index = 1, 8 do
-            LongContent:AddParagraph({
-                Title = "Layout row " .. tostring(index),
-                Content = "Repeated sample content " .. tostring(index) .. " tests scrolling, section spacing, paragraph height and clipping at different window sizes.",
-            })
-        end
-
-        -- SETTINGS / MANAGERS -----------------------------------------------
-        local Settings = Tabs.Settings:AddSection("INTERFACE & CONFIG", "settings")
-        Settings:AddParagraph({
-            Title = "Test environment",
-            Content = "This page exposes the built-in interface and configuration manager sections. Some save features depend on executor file APIs (makefolder, writefile, readfile, listfiles).",
-        })
-        Settings:AddButton({
-            Title = "Test persistent notification",
-            Description = "Creates a notification that remains until dismissed if supported.",
-            Callback = function()
-                Library:Notify({ Title = "Persistent notification", Content = "This notification uses Duration = nil.", SubContent = "Dismiss it manually if a close control is shown.", Duration = nil })
-            end,
-        })
-        local managerOK, managerError = pcall(function()
-            InterfaceManager:SetLibrary(Library)
-            SaveManager:SetLibrary(Library)
-            SaveManager:IgnoreThemeSettings()
-            SaveManager:SetIgnoreIndexes({ "ScarletLab_TransparencyPreview" })
-            InterfaceManager:SetFolder("ScarletIsland")
-            SaveManager:SetFolder("ScarletIsland/ComponentLab")
-            InterfaceManager:BuildInterfaceSection(Tabs.Settings)
-            SaveManager:BuildConfigSection(Tabs.Settings)
-        end)
-        if not managerOK then
-            warn("[ScarletIsland] Manager section test could not be built: " .. tostring(managerError))
-            Settings:AddParagraph({ Title = "Manager warning", Content = "The config/interface manager sections could not be built in this environment. Check the executor file APIs and output log." })
-        end
-        Settings:AddButton({
-            Title = "Unload library",
-            Description = "Calls the built-in unload routine. Use only when finished testing.",
-            Callback = function()
-                pcall(function() Library:Unload() end)
-                pcall(function() Library:Destroy() end)
-            end,
-        })
-
-        Window:SelectTab(1)
-        Library:Notify({ Title = "Scarlet Island", Content = "Component Laboratory loaded.", SubContent = "Try every tab to test controls.", Duration = 6 })
-        Library:CreateIslandPill()
-
-        -- Periodic state probe is intentionally lightweight and stops on unload.
-        task.spawn(function()
-            while not Library.Unloaded do
-                task.wait(1)
-                if Library.Unloaded then break end
-                local current = Options.ScarletLab_Keybind
-                if current and current.GetState then
-                    local stateOK, state = pcall(function() return current:GetState() end)
-                    if stateOK and state then
-                        -- Keep output quiet while held; this line can be uncommented for diagnostics.
-                        ScarletEnvironment.ScarletLabKeyHeld = true
-                    else
-                        ScarletEnvironment.ScarletLabKeyHeld = false
-                    end
-                end
-            end
-        end)
-    end)
-
-    if not ok then
-        warn("[ScarletIsland] Showcase initialization failed: " .. tostring(err))
-    end
-end
-
-task.defer(CreateScarletShowcase)
-
+-- Scarlet Island public API additions:
+-- Library:SetTheme("Dynamic" | "Scarlet" | "Aurora" | "WinUI")
+-- Library:GetThemeNames() -> array of theme names.
+-- Library:SetIslandStatus(title, subtitle, active) updates the live island.
+-- CreateWindow creates the Dynamic Island by default; set DynamicIsland=false to disable it.
+-- Library:CreateMinimizer({Size=UDim2.fromOffset(214,52), Draggable=false}) creates
+-- an animated Dynamic Island entry point; clicking it toggles Window:Minimize().
+-- All original Fluent-compatible controls, save manager, interface manager,
+-- dropdowns, keybinds, color pickers, notifications, dialogs, and sub-tabs remain.
 if RunService:IsStudio() then task.wait(0.01) end
 return Library, SaveManager, InterfaceManager, Mobile
